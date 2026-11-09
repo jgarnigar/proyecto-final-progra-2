@@ -33,7 +33,7 @@ public class EquiposDAO implements CRUD<Equipos>{
             pstmt.setBigDecimal(3, objeto.getTarifaHora());
             pstmt.setBigDecimal(4, objeto.getPrecioReposicion());
             pstmt.setInt(5, objeto.getBateriaPorcentaje());
-
+            pstmt.setString(6, objeto.getEstado());
             return pstmt.executeUpdate() > 0;
 
 
@@ -81,6 +81,9 @@ public class EquiposDAO implements CRUD<Equipos>{
             pstmt.setInt(1, id);
 
             try(ResultSet rs = pstmt.executeQuery()){
+                if (!rs.next()) {
+                    return null;
+                }
 
                 Equipos equipo = new Equipos();
 
