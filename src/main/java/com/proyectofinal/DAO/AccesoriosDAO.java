@@ -75,6 +75,9 @@ public class AccesoriosDAO implements CRUD<Accesorios>{
             pstmt.setInt(1, id);
 
             try(ResultSet rs = pstmt.executeQuery()){
+                if (!rs.next()) {
+                    return null;
+                }
 
                 Accesorios accesorio = new Accesorios();
 
