@@ -1,15 +1,17 @@
 package com.proyectofinal.DAO;
 
-import com.proyectofinal.modelo.Equipos;
-import org.springframework.stereotype.Repository;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.sql.DataSource;
+
+import org.springframework.stereotype.Repository;
+
+import com.proyectofinal.modelo.Equipos;
 
 @Repository
 public class EquiposDAO implements CRUD<Equipos>{
@@ -140,4 +142,21 @@ public class EquiposDAO implements CRUD<Equipos>{
 
         return equipos;
     }
+    
+    public boolean actualizarEstado(int idEquipo, String estado) {
+    String SQL = "UPDATE equipos SET estado = ? WHERE id_equipo = ?";
+
+    try (Connection connection = dataSource.getConnection();
+         PreparedStatement pstmt = connection.prepareStatement(SQL)) {
+
+        pstmt.setString(1, estado);
+        pstmt.setInt(2, idEquipo);
+
+        return pstmt.executeUpdate() > 0;
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+        return false;
+    }
+}
 }
