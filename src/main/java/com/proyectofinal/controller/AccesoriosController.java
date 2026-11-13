@@ -2,6 +2,7 @@ package com.proyectofinal.controller;
 
 import com.proyectofinal.DAO.AccesoriosDAO;
 import com.proyectofinal.modelo.Accesorios;
+import com.proyectofinal.service.AccesoriosService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,9 +16,11 @@ import java.util.List;
 
 public class AccesoriosController {
     private final AccesoriosDAO accesoriosDAO;
+    private final AccesoriosService accesoriosService;
 
-    public AccesoriosController(AccesoriosDAO accesoriosDAO) {
+    public AccesoriosController(AccesoriosDAO accesoriosDAO, AccesoriosService accesoriosService) {
         this.accesoriosDAO = accesoriosDAO;
+        this.accesoriosService = accesoriosService;
     }
 
     @GetMapping
@@ -40,30 +43,41 @@ public class AccesoriosController {
 
     @PostMapping
     public ResponseEntity<?> registrar(@RequestBody Accesorios accesorio) {
-        String error = validar(accesorio);
-        if (error != null) {
-            return ResponseEntity.badRequest().body(error);
+        try {
+            Accesorios nuevoAccesorio = accesoriosService.registrarAccesorio(accesorio);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoAccesorio);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        if (!accesoriosDAO.registrar(accesorio)) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No se pudo registrar el accesorio");
-        }
-        return ResponseEntity.status(HttpStatus.CREATED).body(accesorio);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> modificar(@PathVariable int id, @RequestBody Accesorios accesorio) {
-        if (accesoriosDAO.consultar(id) == null) {
-            return ResponseEntity.notFound().build();
+        try {
+            Accesorios actualizado = accesoriosService.modificarAccesorio(id, accesorio);
+            return ResponseEntity.ok(actualizado);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("No se encontró")) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        String error = validar(accesorio);
-        if (error != null) {
-            return ResponseEntity.badRequest().body(error);
-        }
-        accesorio.setIdAccesorio(id);
+    }
+
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> desactivar(@PathVariable int id) {
+        Accesorios accesorio = accesoriosDAO.consultar(id);
+        if (accesorio == null) return ResponseEntity.notFound().build();
+
+        accesorio.setExistenciaActual(0);
         if (!accesoriosDAO.modificar(accesorio)) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No se pudo modificar el accesorio");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No se pudo vaciar el stock del accesorio");
         }
-        return ResponseEntity.ok(accesorio);
+        return ResponseEntity.noContent().build();
     }
 
     private String validar(Accesorios accesorio) {
