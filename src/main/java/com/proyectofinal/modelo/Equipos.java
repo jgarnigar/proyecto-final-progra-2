@@ -14,7 +14,7 @@ public class Equipos {
   private String estado;
 
 
-  public long getIdEquipo() {
+  public int getIdEquipo() {
     return idEquipo;
   }
 

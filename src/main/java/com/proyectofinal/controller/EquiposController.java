@@ -2,6 +2,7 @@ package com.proyectofinal.controller;
 
 import com.proyectofinal.DAO.EquiposDAO;
 import com.proyectofinal.modelo.Equipos;
+import com.proyectofinal.service.EquiposService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +17,11 @@ import java.util.List;
 public class EquiposController {
     private final EquiposDAO equiposDAO;
 
-    public EquiposController(EquiposDAO equiposDAO) {
+    private final EquiposService equiposService;
+
+    public EquiposController(EquiposDAO equiposDAO, EquiposService equiposService) {
         this.equiposDAO = equiposDAO;
+        this.equiposService = equiposService;
     }
 
     @GetMapping
@@ -40,17 +44,17 @@ public class EquiposController {
 
     @PostMapping
     public ResponseEntity<?> registrar(@RequestBody Equipos equipo) {
-        String error = validar(equipo);
-        if (error != null) {
-            return ResponseEntity.badRequest().body(error);
+        try {
+
+            Equipos nuevoEquipo = equiposService.registrarEquipo(equipo);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoEquipo);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        if (equipo.getEstado() == null || equipo.getEstado().isBlank()) {
-            equipo.setEstado("DISPONIBLE");
-        }
-        if (!equiposDAO.registrar(equipo)) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No se pudo registrar el equipo");
-        }
-        return ResponseEntity.status(HttpStatus.CREATED).body(equipo);
     }
 
     @PutMapping("/{id}")
@@ -102,4 +106,6 @@ public class EquiposController {
         }
         return null;
     }
+
+
 }
