@@ -3,6 +3,7 @@ package com.proyectofinal.controller;
 import java.math.BigDecimal;
 import java.util.List;
 
+import com.proyectofinal.service.ClientesService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -23,9 +24,11 @@ import com.proyectofinal.modelo.Clientes;
 @CrossOrigin(origins = "*")
 public class ClientesController {
     private final ClientesDAO clientesDAO;
+    private final ClientesService clientesService;
 
-    public ClientesController(ClientesDAO clientesDAO){
+    public ClientesController(ClientesDAO clientesDAO, ClientesService clientesService){
         this.clientesDAO = clientesDAO;
+        this.clientesService = clientesService;
     }
 
     @GetMapping
@@ -48,40 +51,33 @@ public class ClientesController {
 
     @PostMapping
     public ResponseEntity<?> registrar(@RequestBody Clientes cliente) {
-        if (esVacio(cliente.getNombre()) || esVacio(cliente.getEmail())) {
-            return ResponseEntity.badRequest().body("El nombre y el email son obligatorios");
-        }
-        if (cliente.getSaldoPendiente() == null) {
-            cliente.setSaldoPendiente(BigDecimal.ZERO);
-        }
-        if (esVacio(cliente.getEstado())) {
-            cliente.setEstado("ACTIVO");
-        }
-        if (!clientesDAO.registrar(cliente)) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No se pudo registrar el cliente");
-        }
-        return ResponseEntity.status(HttpStatus.CREATED).body(cliente);
-    }
+        try {
+            Clientes nuevoCliente = clientesService.registrarCliente(cliente);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoCliente);
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
     @PutMapping("/{id}")
     public ResponseEntity<?> modificar(@PathVariable int id, @RequestBody Clientes cliente) {
-        if (clientesDAO.consultar(id) == null) {
-            return ResponseEntity.notFound().build();
+        try {
+            Clientes clienteActualizado = clientesService.modificarCliente(id, cliente);
+            return ResponseEntity.ok(clienteActualizado);
+
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("No se encontró")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            }
+
+            return ResponseEntity.badRequest().body(e.getMessage());
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
-        if (esVacio(cliente.getNombre()) || esVacio(cliente.getEmail())) {
-            return ResponseEntity.badRequest().body("El nombre y el email son obligatorios");
-        }
-        cliente.setIdCliente(id);
-        if (cliente.getSaldoPendiente() == null) {
-            cliente.setSaldoPendiente(BigDecimal.ZERO);
-        }
-        if (esVacio(cliente.getEstado())) {
-            cliente.setEstado("ACTIVO");
-        }
-        if (!clientesDAO.modificar(cliente)) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No se pudo modificar el cliente");
-        }
-        return ResponseEntity.ok(cliente);
     }
 
     @DeleteMapping("/{id}")
