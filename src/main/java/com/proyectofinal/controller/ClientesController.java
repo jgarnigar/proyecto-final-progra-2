@@ -1,4 +1,4 @@
-package com.proyectofinal.Controller;
+package com.proyectofinal.controller;
 
 import java.math.BigDecimal;
 import java.util.List;

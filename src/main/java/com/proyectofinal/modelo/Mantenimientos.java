@@ -1,41 +1,39 @@
 package com.proyectofinal.modelo;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public class Mantenimientos {
 
-  private long idMantenimiento;
-  private long idEquipo;
-  private java.sql.Timestamp fecha;
+  private int idMantenimiento;
+  private int idEquipo;
+  private LocalDateTime fecha;
   private String motivo;
-  private double costo;
+  private BigDecimal costo;
 
-
-  public long getIdMantenimiento() {
+  public int getIdMantenimiento() {
     return idMantenimiento;
   }
 
-  public void setIdMantenimiento(long idMantenimiento) {
+  public void setIdMantenimiento(int idMantenimiento) {
     this.idMantenimiento = idMantenimiento;
   }
 
-
-  public long getIdEquipo() {
+  public int getIdEquipo() {
     return idEquipo;
   }
 
-  public void setIdEquipo(long idEquipo) {
+  public void setIdEquipo(int idEquipo) {
     this.idEquipo = idEquipo;
   }
 
-
-  public java.sql.Timestamp getFecha() {
+  public LocalDateTime getFecha() {
     return fecha;
   }
 
-  public void setFecha(java.sql.Timestamp fecha) {
+  public void setFecha(LocalDateTime fecha) {
     this.fecha = fecha;
   }
-
 
   public String getMotivo() {
     return motivo;
@@ -45,13 +43,11 @@ public class Mantenimientos {
     this.motivo = motivo;
   }
 
-
-  public double getCosto() {
+  public BigDecimal getCosto() {
     return costo;
   }
 
-  public void setCosto(double costo) {
+  public void setCosto(BigDecimal costo) {
     this.costo = costo;
   }
-
 }

@@ -1,47 +1,41 @@
 package com.proyectofinal.modelo;
 
-
 public class AlquilerAccesorios {
 
-  private long idAlquiler;
-  private long idAccesorio;
-  private long cantidad;
-  private long unidadesExtraviadas;
+  private int idAlquiler;
+  private int idAccesorio;
+  private int cantidad;
+  private int unidadesExtraviadas;
 
-
-  public long getIdAlquiler() {
+  public int getIdAlquiler() {
     return idAlquiler;
   }
 
-  public void setIdAlquiler(long idAlquiler) {
+  public void setIdAlquiler(int idAlquiler) {
     this.idAlquiler = idAlquiler;
   }
 
-
-  public long getIdAccesorio() {
+  public int getIdAccesorio() {
     return idAccesorio;
   }
 
-  public void setIdAccesorio(long idAccesorio) {
+  public void setIdAccesorio(int idAccesorio) {
     this.idAccesorio = idAccesorio;
   }
 
-
-  public long getCantidad() {
+  public int getCantidad() {
     return cantidad;
   }
 
-  public void setCantidad(long cantidad) {
+  public void setCantidad(int cantidad) {
     this.cantidad = cantidad;
   }
 
-
-  public long getUnidadesExtraviadas() {
+  public int getUnidadesExtraviadas() {
     return unidadesExtraviadas;
   }
 
-  public void setUnidadesExtraviadas(long unidadesExtraviadas) {
+  public void setUnidadesExtraviadas(int unidadesExtraviadas) {
     this.unidadesExtraviadas = unidadesExtraviadas;
   }
-
 }

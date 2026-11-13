@@ -1,30 +1,26 @@
 package com.proyectofinal.modelo;
 
-
 public class AlquilerEquipos {
 
-  private long idAlquiler;
-  private long idEquipo;
+  private int idAlquiler;
+  private int idEquipo;
   private String estadoDevolucion;
 
-
-  public long getIdAlquiler() {
+  public int getIdAlquiler() {
     return idAlquiler;
   }
 
-  public void setIdAlquiler(long idAlquiler) {
+  public void setIdAlquiler(int idAlquiler) {
     this.idAlquiler = idAlquiler;
   }
 
-
-  public long getIdEquipo() {
+  public int getIdEquipo() {
     return idEquipo;
   }
 
-  public void setIdEquipo(long idEquipo) {
+  public void setIdEquipo(int idEquipo) {
     this.idEquipo = idEquipo;
   }
-
 
   public String getEstadoDevolucion() {
     return estadoDevolucion;
@@ -33,5 +29,4 @@ public class AlquilerEquipos {
   public void setEstadoDevolucion(String estadoDevolucion) {
     this.estadoDevolucion = estadoDevolucion;
   }
-
 }

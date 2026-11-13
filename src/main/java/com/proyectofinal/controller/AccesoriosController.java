@@ -1,4 +1,4 @@
-package com.proyectofinal.Controller;
+package com.proyectofinal.controller;
 
 import com.proyectofinal.DAO.AccesoriosDAO;
 import com.proyectofinal.modelo.Accesorios;

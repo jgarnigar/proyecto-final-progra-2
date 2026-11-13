@@ -1,50 +1,46 @@
 package com.proyectofinal.modelo;
 
+import java.time.LocalDateTime;
 
 public class Accesoriohistorial {
 
-  private long idMovimiento;
-  private long idAccesorio;
-  private java.sql.Timestamp fecha;
-  private long cantidad;
+  private int idMovimiento;
+  private int idAccesorio;
+  private LocalDateTime fecha;
+  private int cantidad;
   private String tipoMovimiento;
 
-
-  public long getIdMovimiento() {
+  public int getIdMovimiento() {
     return idMovimiento;
   }
 
-  public void setIdMovimiento(long idMovimiento) {
+  public void setIdMovimiento(int idMovimiento) {
     this.idMovimiento = idMovimiento;
   }
 
-
-  public long getIdAccesorio() {
+  public int getIdAccesorio() {
     return idAccesorio;
   }
 
-  public void setIdAccesorio(long idAccesorio) {
+  public void setIdAccesorio(int idAccesorio) {
     this.idAccesorio = idAccesorio;
   }
 
-
-  public java.sql.Timestamp getFecha() {
+  public LocalDateTime getFecha() {
     return fecha;
   }
 
-  public void setFecha(java.sql.Timestamp fecha) {
+  public void setFecha(LocalDateTime fecha) {
     this.fecha = fecha;
   }
 
-
-  public long getCantidad() {
+  public int getCantidad() {
     return cantidad;
   }
 
-  public void setCantidad(long cantidad) {
+  public void setCantidad(int cantidad) {
     this.cantidad = cantidad;
   }
-
 
   public String getTipoMovimiento() {
     return tipoMovimiento;
@@ -53,5 +49,4 @@ public class Accesoriohistorial {
   public void setTipoMovimiento(String tipoMovimiento) {
     this.tipoMovimiento = tipoMovimiento;
   }
-
 }

@@ -1,46 +1,46 @@
 package com.proyectofinal.modelo;
 
-
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Alquileres {
 
-  private long idAlquiler;
-  private long idCliente;
-  private double depositoCobrado;
+  private int idAlquiler;
+  private int idCliente;
+  private BigDecimal depositoCobrado;
   private String estado;
-  private java.sql.Timestamp fechaEstimada;
-  private java.sql.Timestamp fechaReal;
+  private LocalDateTime fechaEstimada;
+  private LocalDateTime fechaReal;
 
-  private List<AlquilerAccesorios> alquilerAccesoriosLista;
-  private List<AlquilerEquipos> alquilerEquiposLista;
+  // Inicialización para evitar NullPointerException al agregar elementos
+  private List<AlquilerAccesorios> alquilerAccesoriosLista = new ArrayList<>();
+  private List<AlquilerEquipos> alquilerEquiposLista = new ArrayList<>();
 
-  public long getIdAlquiler() {
+  public int getIdAlquiler() {
     return idAlquiler;
   }
 
-  public void setIdAlquiler(long idAlquiler) {
+  public void setIdAlquiler(int idAlquiler) {
     this.idAlquiler = idAlquiler;
   }
 
-
-  public long getIdCliente() {
+  public int getIdCliente() {
     return idCliente;
   }
 
-  public void setIdCliente(long idCliente) {
+  public void setIdCliente(int idCliente) {
     this.idCliente = idCliente;
   }
 
-
-  public double getDepositoCobrado() {
+  public BigDecimal getDepositoCobrado() {
     return depositoCobrado;
   }
 
-  public void setDepositoCobrado(double depositoCobrado) {
+  public void setDepositoCobrado(BigDecimal depositoCobrado) {
     this.depositoCobrado = depositoCobrado;
   }
-
 
   public String getEstado() {
     return estado;
@@ -50,40 +50,51 @@ public class Alquileres {
     this.estado = estado;
   }
 
-
-  public java.sql.Timestamp getFechaEstimada() {
+  public LocalDateTime getFechaEstimada() {
     return fechaEstimada;
   }
 
-  public void setFechaEstimada(java.sql.Timestamp fechaEstimada) {
+  public void setFechaEstimada(LocalDateTime fechaEstimada) {
     this.fechaEstimada = fechaEstimada;
   }
 
-
-  public java.sql.Timestamp getFechaReal() {
+  public LocalDateTime getFechaReal() {
     return fechaReal;
   }
 
-  public void setFechaReal(java.sql.Timestamp fechaReal) {
+  public void setFechaReal(LocalDateTime fechaReal) {
     this.fechaReal = fechaReal;
+  }
+
+  public List<AlquilerAccesorios> getAlquilerAccesoriosLista() {
+    return alquilerAccesoriosLista;
+  }
+
+  public void setAlquilerAccesoriosLista(List<AlquilerAccesorios> alquilerAccesoriosLista) {
+    this.alquilerAccesoriosLista = alquilerAccesoriosLista;
+  }
+
+  public List<AlquilerEquipos> getAlquilerEquiposLista() {
+    return alquilerEquiposLista;
+  }
+
+  public void setAlquilerEquiposLista(List<AlquilerEquipos> alquilerEquiposLista) {
+    this.alquilerEquiposLista = alquilerEquiposLista;
   }
 
   public void agregarAlquilerAccesorios(AlquilerAccesorios alquilerAccesorios) {
     this.alquilerAccesoriosLista.add(alquilerAccesorios);
   }
 
-  public void agregarAlquierEquipos(AlquilerEquipos alquierEquipos) {
-    this.alquilerEquiposLista.add(alquierEquipos);
+  public void agregarAlquilerEquipos(AlquilerEquipos alquilerEquipos) {
+    this.alquilerEquiposLista.add(alquilerEquipos);
   }
 
-  public boolean removerAlquierAccesorios(int idAlquiler){
-
-      return this.alquilerAccesoriosLista.removeIf(objeto -> objeto.getIdAlquiler() == idAlquiler);
+  public boolean removerAlquilerAccesorios(int idAlquiler) {
+    return this.alquilerAccesoriosLista.removeIf(objeto -> objeto.getIdAlquiler() == idAlquiler);
   }
 
-  public boolean removerAlquierEquipos(int idAlquipos){
-
-      return this.alquilerEquiposLista.removeIf(objeto -> objeto.getIdAlquiler() == idAlquipos);
+  public boolean removerAlquilerEquipos(int idAlquiler) {
+    return this.alquilerEquiposLista.removeIf(objeto -> objeto.getIdAlquiler() == idAlquiler);
   }
-
 }
