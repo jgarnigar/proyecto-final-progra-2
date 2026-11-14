@@ -33,6 +33,24 @@ body {
     z-index: 2;
 }
 
+/* Hacer transparentes las cajas de resumen y promedios */
+#bloqueNotasPrev, #bloqueKpisPrev .border {
+    background-color: transparent !important;
+}
+
+/* Hacer transparente la tabla, sus celdas y encabezados para ver la marca de agua */
+#areaImpresionPDF table, 
+#areaImpresionPDF th, 
+#areaImpresionPDF td {
+    background-color: transparent !important;
+}
+
+/* Mantener el encabezado de la tabla con un tono oscuro pero semitransparente */
+#areaImpresionPDF thead.table-dark th {
+    background-color: rgba(33, 37, 41, 0.9) !important;
+    color: #fff !important;
+}
+
 .marca-agua-umg {
     position: absolute;
     top: 42%;
