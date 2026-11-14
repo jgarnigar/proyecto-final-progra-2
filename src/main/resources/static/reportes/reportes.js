@@ -1,32 +1,188 @@
-function cargarClientes() {
-    // Apunta exactamente a la ruta definida @RequestMapping("/api/clientes")
-    fetch('/api/clientes')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error al obtener los clientes');
-            }
-            return response.json();
-        })
-        .then(clientes => {
-            const cuerpoTabla = document.getElementById('cuerpoTabla');
-            cuerpoTabla.innerHTML = ''; // Limpiar la tabla antes de rellenar
+document.addEventListener("DOMContentLoaded", () => {
+    const selectTipo = document.getElementById("tipoReporte");
+    const inputBusqueda = document.getElementById("filtroBusqueda");
+    const btnLimpiar = document.getElementById("btnLimpiarFiltros");
+    const btnCargar = document.getElementById("btnCargarDatos");
+    const btnPDF = document.getElementById("btnDescargarPDF");
+    const btnPDFSecundario = document.getElementById("btnDescargarPDFSecundario");
 
-            clientes.forEach(cliente => {
-                const fila = document.createElement('tr');
+    const inputTitulo = document.getElementById("inputTituloDoc");
+    const inputResponsable = document.getElementById("inputResponsableDoc");
+    const inputNotas = document.getElementById("inputNotasDoc");
+    const inputMarcaAguaPrincipal = document.getElementById("inputMarcaAguaPrincipal");
+    const inputMarcaAguaSub = document.getElementById("inputMarcaAguaSub");
+    const chkKpis = document.getElementById("chkMostrarKpis");
+    const chkNotas = document.getElementById("chkMostrarNotas");
+    const chkMarcaAgua = document.getElementById("chkMostrarMarcaAgua");
 
-                fila.innerHTML = `
-                    <td>${cliente.idCliente}</td>
-                    <td>${cliente.nombre}</td>
-                    <td>${cliente.email}</td>
-                    <td>$${cliente.saldoPendiente}</td>
-                    <td>${cliente.estado}</td>
-                `;
+    const mensajeEstado = document.getElementById("mensajeEstado");
+    const badgeSincronizacion = document.getElementById("badgeSincronizacion");
+    const tablaHead = document.getElementById("tablaHead");
+    const tablaBody = document.getElementById("tablaBody");
 
-                cuerpoTabla.appendChild(fila);
-            });
-        })
-        .catch(error => {
-            console.error('Ocurrió un problema:', error);
-            alert('No se pudieron cargar los clientes. Revisa la consola.');
+    let datosOriginales = [];
+    let datosFiltrados = [];
+    const folioActual = "RL-" + new Date().getFullYear() + "-" + Math.floor(100 + Math.random() * 900);
+
+    const formatearMoneda = (valor) => {
+        return "Q " + Number(valor || 0).toLocaleString("es-GT", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         });
-}
+    };
+
+    const sincronizarEncabezadoDocumento = () => {
+        const ahora = new Date();
+        document.getElementById("prevFolioDoc").textContent = folioActual;
+        document.getElementById("prevFechaDoc").textContent = ahora.toLocaleDateString("es-GT");
+        document.getElementById("prevModuloDoc").textContent = selectTipo.value.toUpperCase();
+        document.getElementById("prevTituloDoc").textContent = inputTitulo.value || "REPORTE OPERATIVO";
+        document.getElementById("prevResponsableDoc").textContent = inputResponsable.value || "Rueda Libre";
+        document.getElementById("prevNotasDoc").textContent = inputNotas.value || "";
+
+        const prevMarcaPrincipal = document.getElementById("prevMarcaAguaPrincipal");
+        const prevMarcaSub = document.getElementById("prevMarcaAguaSub");
+        prevMarcaPrincipal.textContent = inputMarcaAguaPrincipal.value.toUpperCase();
+        prevMarcaSub.textContent = inputMarcaAguaSub.value.toUpperCase();
+
+        const mostrarMarca = chkMarcaAgua.checked;
+        prevMarcaPrincipal.style.display = mostrarMarca ? "block" : "none";
+        prevMarcaSub.style.display = mostrarMarca ? "block" : "none";
+        inputMarcaAguaPrincipal.disabled = !mostrarMarca;
+        inputMarcaAguaSub.disabled = !mostrarMarca;
+
+        document.getElementById("bloqueKpisPrev").style.display = chkKpis.checked ? "flex" : "none";
+        document.getElementById("bloqueNotasPrev").style.display = chkNotas.checked ? "block" : "none";
+    };
+
+    const calcularMetricas = () => {
+        const total = datosFiltrados.length;
+        let sumaMontos = 0;
+
+        datosFiltrados.forEach(item => {
+            const monto = item.total || item.monto || item.costo || item.tarifaHora || item.tarifa || item.saldoPendiente || 0;
+            if (!isNaN(parseFloat(monto))) {
+                sumaMontos += parseFloat(monto);
+            }
+        });
+
+        const promedio = total > 0 ? sumaMontos / total : 0;
+
+        document.getElementById("prevKpiMonto").textContent = formatearMoneda(sumaMontos);
+        document.getElementById("prevKpiPromedio").textContent = formatearMoneda(promedio);
+    };
+
+    const renderizarTabla = () => {
+        tablaHead.innerHTML = "";
+        tablaBody.innerHTML = "";
+
+        if (!datosFiltrados || datosFiltrados.length === 0) {
+            mensajeEstado.textContent = "No hay registros que coincidan con la búsqueda actual.";
+            return;
+        }
+
+        mensajeEstado.textContent = "";
+        const columnas = Object.keys(datosFiltrados[0]);
+
+        const filaHeader = document.createElement("tr");
+        columnas.forEach(col => {
+            const th = document.createElement("th");
+            th.textContent = col.toUpperCase();
+            filaHeader.appendChild(th);
+        });
+        tablaHead.appendChild(filaHeader);
+
+        datosFiltrados.forEach(item => {
+            const tr = document.createElement("tr");
+            columnas.forEach(col => {
+                const td = document.createElement("td");
+                let valor = item[col];
+                if (typeof valor === "object" && valor !== null) {
+                    valor = valor.nombre || valor.modelo || valor.id || JSON.stringify(valor);
+                }
+                td.textContent = valor !== null && valor !== undefined ? valor : "-";
+                tr.appendChild(td);
+            });
+            tablaBody.appendChild(tr);
+        });
+    };
+
+    const aplicarFiltros = () => {
+        const termino = inputBusqueda.value.toLowerCase().trim();
+        if (!termino) {
+            datosFiltrados = [...datosOriginales];
+        } else {
+            datosFiltrados = datosOriginales.filter(item =>
+                Object.values(item).some(val =>
+                    String(val).toLowerCase().includes(termino)
+                )
+            );
+        }
+        calcularMetricas();
+        renderizarTabla();
+        sincronizarEncabezadoDocumento();
+    };
+
+    const cargarDatosReporte = async () => {
+        const tipo = selectTipo.value;
+        mensajeEstado.textContent = "Sincronizando con base de datos...";
+        badgeSincronizacion.className = "badge bg-warning-subtle text-warning";
+        badgeSincronizacion.textContent = "Sincronizando...";
+
+        try {
+            const respuesta = await fetch(`/api/${tipo}`);
+            if (!respuesta.ok) {
+                throw new Error(`Error HTTP ${respuesta.status}`);
+            }
+
+            datosOriginales = await respuesta.json();
+            badgeSincronizacion.className = "badge bg-success-subtle text-success";
+            badgeSincronizacion.textContent = "Sincronizado";
+            aplicarFiltros();
+        } catch (error) {
+            console.error("Error al obtener reporte:", error);
+            datosOriginales = [];
+            datosFiltrados = [];
+            badgeSincronizacion.className = "badge bg-danger-subtle text-danger";
+            badgeSincronizacion.textContent = "Sin Conexión";
+            calcularMetricas();
+            tablaHead.innerHTML = "";
+            tablaBody.innerHTML = "";
+            mensajeEstado.textContent = `No se pudieron cargar los datos (${error.message}). Verifica que Spring Boot esté activo.`;
+        }
+    };
+
+    const descargarPDF = () => {
+        const elemento = document.getElementById("areaImpresionPDF");
+        const tipo = selectTipo.value;
+        const opciones = {
+            margin: 0.4,
+            filename: `Reporte_RuedaLibre_${tipo}_${folioActual}.pdf`,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+        };
+        html2pdf().set(opciones).from(elemento).save();
+    };
+
+    selectTipo.addEventListener("change", () => {
+        inputBusqueda.value = "";
+        cargarDatosReporte();
+    });
+    inputBusqueda.addEventListener("input", aplicarFiltros);
+    btnLimpiar.addEventListener("click", () => {
+        inputBusqueda.value = "";
+        aplicarFiltros();
+    });
+    btnCargar.addEventListener("click", cargarDatosReporte);
+    btnPDF.addEventListener("click", descargarPDF);
+    btnPDFSecundario.addEventListener("click", descargarPDF);
+
+    [inputTitulo, inputResponsable, inputNotas, inputMarcaAguaPrincipal, inputMarcaAguaSub, chkKpis, chkNotas, chkMarcaAgua].forEach(el => {
+        el.addEventListener("input", sincronizarEncabezadoDocumento);
+        el.addEventListener("change", sincronizarEncabezadoDocumento);
+    });
+
+    sincronizarEncabezadoDocumento();
+    cargarDatosReporte();
+});
