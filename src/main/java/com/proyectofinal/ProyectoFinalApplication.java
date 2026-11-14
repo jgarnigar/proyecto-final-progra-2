@@ -10,7 +10,6 @@ public class ProyectoFinalApplication {
 
         SpringApplication.run(ProyectoFinalApplication.class, args);
 
-
         }
 
 }

@@ -1,119 +1,267 @@
 const API_URL = '/api/alquileres';
 
-document.addEventListener('DOMContentLoaded', () => {
+let clientesMap = {};
+let equiposMap = {};
+let accesoriosMap = {};
+let alquileresCache = [];
+
+document.addEventListener('DOMContentLoaded', function () {
     cargarAlquileres();
+    cargarCatalogos();
 });
+
+function cargarCatalogos() {
+    Promise.allSettled([
+        fetch('/api/clientes').then(function (r) { return r.ok ? r.json() : []; }),
+        fetch('/api/equipos').then(function (r) { return r.ok ? r.json() : []; }),
+        fetch('/api/accesorios').then(function (r) { return r.ok ? r.json() : []; })
+    ]).then(function (resultados) {
+        var clientes = resultados[0].status === 'fulfilled' && Array.isArray(resultados[0].value) ? resultados[0].value : [];
+        var equipos = resultados[1].status === 'fulfilled' && Array.isArray(resultados[1].value) ? resultados[1].value : [];
+        var accesorios = resultados[2].status === 'fulfilled' && Array.isArray(resultados[2].value) ? resultados[2].value : [];
+
+        llenarSelectClientes(clientes);
+        llenarChecklistEquipos(equipos);
+        llenarListaAccesorios(accesorios);
+
+        if (alquileresCache.length > 0) {
+            renderizarTablaAlquileres(alquileresCache);
+        }
+    });
+}
+
+function llenarSelectClientes(clientes) {
+    var select = document.getElementById('idClienteAlquiler');
+    if (!select) return;
+    clientesMap = {};
+
+    if (!clientes || clientes.length === 0) {
+        select.innerHTML = '<option value="">No hay clientes registrados</option>';
+        return;
+    }
+
+    var html = '<option value="">Seleccione un cliente...</option>';
+    clientes.forEach(function (c) {
+        clientesMap[c.idCliente] = c.nombre;
+        var saldo = Number(c.saldoPendiente || 0);
+        var inactivo = c.estado === 'INACTIVO';
+        var bloqueo = inactivo || saldo > 0;
+        var etiquetaExtra = inactivo
+            ? ' [INACTIVO]'
+            : (saldo > 0 ? ' [Saldo pendiente: Q ' + saldo.toFixed(2) + ']' : '');
+
+        html += '<option value="' + c.idCliente + '"' + (bloqueo ? ' disabled' : '') + '>' +
+            '#' + c.idCliente + ' - ' + c.nombre + etiquetaExtra +
+            '</option>';
+    });
+    select.innerHTML = html;
+}
+
+function llenarChecklistEquipos(equipos) {
+    var contenedor = document.getElementById('contenedorEquiposAlquiler');
+    if (!contenedor) return;
+    equiposMap = {};
+
+    if (!equipos || equipos.length === 0) {
+        contenedor.innerHTML = '<span class="text-muted small">No hay equipos registrados.</span>';
+        return;
+    }
+
+    equipos.forEach(function (eq) {
+        equiposMap[eq.idEquipo] = '#' + eq.idEquipo + ' ' + eq.tipo + ' ' + eq.modelo;
+    });
+
+    var disponibles = equipos.filter(function (eq) { return eq.estado === 'DISPONIBLE'; });
+    if (disponibles.length === 0) {
+        contenedor.innerHTML = '<span class="text-danger small">No hay equipos disponibles en este momento.</span>';
+        return;
+    }
+
+    var html = '';
+    disponibles.forEach(function (eq) {
+        var bateria = eq.bateriaPorcentaje !== null && eq.bateriaPorcentaje !== undefined
+            ? ' | Bat: ' + eq.bateriaPorcentaje + '%'
+            : '';
+        html +=
+            '<div class="form-check mb-1">' +
+            '<input class="form-check-input check-equipo-alquiler" type="checkbox" value="' + eq.idEquipo + '" id="chkEq_' + eq.idEquipo + '">' +
+            '<label class="form-check-label" for="chkEq_' + eq.idEquipo + '">' +
+            '#' + eq.idEquipo + ' - ' + eq.tipo + ' ' + eq.modelo +
+            ' (Q ' + Number(eq.tarifaHora || 0).toFixed(2) + '/h' + bateria + ')' +
+            '</label>' +
+            '</div>';
+    });
+    contenedor.innerHTML = html;
+}
+
+function llenarListaAccesorios(accesorios) {
+    var contenedor = document.getElementById('contenedorAccesoriosAlquiler');
+    if (!contenedor) return;
+    accesoriosMap = {};
+
+    if (!accesorios || accesorios.length === 0) {
+        contenedor.innerHTML = '<span class="text-muted small">No hay accesorios registrados.</span>';
+        return;
+    }
+
+    accesorios.forEach(function (acc) {
+        accesoriosMap[acc.idAccesorio] = acc.nombre;
+    });
+
+    var conStock = accesorios.filter(function (acc) { return acc.existenciaActual > 0; });
+    if (conStock.length === 0) {
+        contenedor.innerHTML = '<span class="text-muted small">Sin accesorios en stock.</span>';
+        return;
+    }
+
+    var html = '';
+    conStock.forEach(function (acc) {
+        html +=
+            '<div class="d-flex justify-content-between align-items-center mb-2">' +
+            '<span>#' + acc.idAccesorio + ' - ' + acc.nombre + ' (Q ' + Number(acc.tarifaFija || 0).toFixed(2) + ' | Disp: ' + acc.existenciaActual + ')</span>' +
+            '<input type="number" class="form-control form-control-sm input-acc-alquiler" style="width: 80px;" ' +
+            'data-id="' + acc.idAccesorio + '" min="0" max="' + acc.existenciaActual + '" value="0">' +
+            '</div>';
+    });
+    contenedor.innerHTML = html;
+}
 
 function cargarAlquileres() {
     fetch(API_URL)
-        .then(async response => {
+        .then(function (response) {
             if (!response.ok) {
-                const msg = await response.text();
-                throw new Error(msg || 'No se pudieron cargar los alquileres.');
+                return response.text().then(function (msg) {
+                    throw new Error(msg || 'No se pudieron cargar los alquileres.');
+                });
             }
             return response.json();
         })
-        .then(alquileres => {
-            const tbody = document.getElementById('cuerpoTablaAlquileres');
-            tbody.innerHTML = '';
-
-            if (!alquileres || alquileres.length === 0) {
+        .then(function (alquileres) {
+            alquileresCache = Array.isArray(alquileres) ? alquileres : [];
+            renderizarTablaAlquileres(alquileresCache);
+        })
+        .catch(function (error) {
+            console.error('Error cargando alquileres:', error);
+            var tbody = document.getElementById('cuerpoTablaAlquileres');
+            if (tbody) {
                 tbody.innerHTML =
                     '<tr>' +
-                    '<td colspan="7" class="text-center text-muted py-4">' +
-                    'No hay alquileres registrados. Presiona "Nuevo Alquiler" para crear uno.' +
+                    '<td colspan="7" class="text-center text-danger py-4">' +
+                    'Error de conexión con el servidor: ' + error.message +
                     '</td>' +
                     '</tr>';
-                return;
             }
-
-            alquileres.forEach(alq => {
-                let badgeColor = 'bg-secondary';
-                let botonAccion = '<span class="text-muted small">Completado</span>';
-
-                if (alq.estado === 'RESERVADO') {
-                    badgeColor = 'bg-info text-dark';
-                    botonAccion =
-                        '<button class="btn btn-sm btn-success" onclick="entregarAlquiler(' + alq.idAlquiler + ')">' +
-                        '<i class="bi bi-box-arrow-right me-1"></i> Entregar' +
-                        '</button>';
-                } else if (alq.estado === 'ACTIVO') {
-                    badgeColor = 'bg-warning text-dark';
-                    botonAccion =
-                        '<button class="btn btn-sm btn-primary" onclick="abrirModalDevolucion(' + alq.idAlquiler + ')">' +
-                        '<i class="bi bi-cash-coin me-1"></i> Recibir / Cobrar' +
-                        '</button>';
-                } else if (alq.estado === 'FINALIZADO') {
-                    badgeColor = 'bg-success';
-                }
-
-                const tr = document.createElement('tr');
-                tr.innerHTML =
-                    '<td class="fw-bold">#' + alq.idAlquiler + '</td>' +
-                    '<td>Cliente #' + alq.idCliente + '</td>' +
-                    '<td>Q ' + Number(alq.depositoCobrado || 0).toFixed(2) + '</td>' +
-                    '<td>' + formatearFecha(alq.fechaEstimada) + '</td>' +
-                    '<td>' + formatearFecha(alq.fechaReal) + '</td>' +
-                    '<td><span class="badge ' + badgeColor + '">' + alq.estado + '</span></td>' +
-                    '<td>' + botonAccion + '</td>';
-                tbody.appendChild(tr);
-            });
-        })
-        .catch(error => {
-            console.error('Error cargando alquileres:', error);
-            const tbody = document.getElementById('cuerpoTablaAlquileres');
-            tbody.innerHTML =
-                '<tr>' +
-                '<td colspan="7" class="text-center text-danger py-4">' +
-                'Error de conexión con el servidor: ' + error.message +
-                '</td>' +
-                '</tr>';
         });
+}
+
+function renderizarTablaAlquileres(alquileres) {
+    var tbody = document.getElementById('cuerpoTablaAlquileres');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (alquileres.length === 0) {
+        tbody.innerHTML =
+            '<tr>' +
+            '<td colspan="7" class="text-center text-muted py-4">' +
+            'No hay alquileres registrados. Presiona "Nuevo Alquiler" para crear uno.' +
+            '</td>' +
+            '</tr>';
+        return;
+    }
+
+    alquileres.forEach(function (alq) {
+        var badgeColor = 'bg-secondary';
+        var botonAccion = '<span class="text-muted small">Completado</span>';
+
+        if (alq.estado === 'RESERVADO') {
+            badgeColor = 'bg-info text-dark';
+            botonAccion =
+                '<button type="button" class="btn btn-sm btn-success" onclick="entregarAlquiler(' + alq.idAlquiler + ')">' +
+                '<i class="bi bi-box-arrow-right me-1"></i> Entregar' +
+                '</button>';
+        } else if (alq.estado === 'ACTIVO') {
+            badgeColor = 'bg-warning text-dark';
+            botonAccion =
+                '<button type="button" class="btn btn-sm btn-primary" onclick="abrirModalDevolucion(' + alq.idAlquiler + ')">' +
+                '<i class="bi bi-cash-coin me-1"></i> Recibir / Cobrar' +
+                '</button>';
+        } else if (alq.estado === 'FINALIZADO') {
+            badgeColor = 'bg-success';
+        }
+
+        var nombreCliente = clientesMap[alq.idCliente]
+            ? '#' + alq.idCliente + ' - ' + clientesMap[alq.idCliente]
+            : 'Cliente #' + alq.idCliente;
+
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+            '<td class="fw-bold">#' + alq.idAlquiler + '</td>' +
+            '<td>' + nombreCliente + '</td>' +
+            '<td>Q ' + Number(alq.depositoCobrado || 0).toFixed(2) + '</td>' +
+            '<td>' + formatearFecha(alq.fechaEstimada) + '</td>' +
+            '<td>' + formatearFecha(alq.fechaReal) + '</td>' +
+            '<td><span class="badge ' + badgeColor + '">' + alq.estado + '</span></td>' +
+            '<td>' + botonAccion + '</td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function abrirModalNuevoAlquiler() {
+    var form = document.getElementById('formNuevoAlquiler');
+    if (form) form.reset();
+    var alerta = document.getElementById('alertaNuevoAlquiler');
+    if (alerta) alerta.classList.add('d-none');
+
+    cargarCatalogos();
+
+    var modalEl = document.getElementById('modalNuevoAlquiler');
+    if (modalEl) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
 }
 
 function crearAlquiler(event) {
     event.preventDefault();
-    const alerta = document.getElementById('alertaNuevoAlquiler');
+    var alerta = document.getElementById('alertaNuevoAlquiler');
     alerta.classList.add('d-none');
 
-    const idCliente = parseInt(document.getElementById('idClienteAlquiler').value);
-    const fechaEstimada = document.getElementById('fechaEstimadaAlquiler').value;
-    const equiposTexto = document.getElementById('equiposAlquiler').value;
-    const accesoriosTexto = document.getElementById('accesoriosAlquiler').value;
+    var idCliente = parseInt(document.getElementById('idClienteAlquiler').value);
+    var fechaEstimada = document.getElementById('fechaEstimadaAlquiler').value;
 
-    const alquilerEquiposLista = equiposTexto
-        .split(',')
-        .map(item => parseInt(item.trim()))
-        .filter(id => !isNaN(id))
-        .map(idEquipo => ({ idEquipo }));
-
-    if (alquilerEquiposLista.length === 0) {
-        alerta.textContent = 'Debe ingresar al menos un ID de equipo válido.';
+    if (isNaN(idCliente)) {
+        alerta.textContent = 'Debe seleccionar un cliente válido.';
         alerta.classList.remove('d-none');
         return;
     }
 
-    const alquilerAccesoriosLista = [];
-    if (accesoriosTexto.trim() !== '') {
-        accesoriosTexto.split(',').forEach(par => {
-            const [idStr, cantStr] = par.split(':');
-            const idAccesorio = parseInt((idStr || '').trim());
-            const cantidad = parseInt((cantStr || '').trim());
-            if (!isNaN(idAccesorio) && !isNaN(cantidad) && cantidad > 0) {
-                alquilerAccesoriosLista.push({
-                    idAccesorio,
-                    cantidad,
-                    unidadesExtraviadas: 0
-                });
-            }
-        });
+    var alquilerEquiposLista = [];
+    document.querySelectorAll('.check-equipo-alquiler:checked').forEach(function (chk) {
+        alquilerEquiposLista.push({ idEquipo: parseInt(chk.value) });
+    });
+
+    if (alquilerEquiposLista.length === 0) {
+        alerta.textContent = 'Debe seleccionar al menos un equipo disponible.';
+        alerta.classList.remove('d-none');
+        return;
     }
 
-    const payload = {
-        idCliente,
-        fechaEstimada,
-        alquilerEquiposLista,
-        alquilerAccesoriosLista
+    var alquilerAccesoriosLista = [];
+    document.querySelectorAll('.input-acc-alquiler').forEach(function (inp) {
+        var cantidad = parseInt(inp.value || '0');
+        if (cantidad > 0) {
+            alquilerAccesoriosLista.push({
+                idAccesorio: parseInt(inp.dataset.id),
+                cantidad: cantidad,
+                unidadesExtraviadas: 0
+            });
+        }
+    });
+
+    var payload = {
+        idCliente: idCliente,
+        fechaEstimada: fechaEstimada,
+        alquilerEquiposLista: alquilerEquiposLista,
+        alquilerAccesoriosLista: alquilerAccesoriosLista
     };
 
     fetch(API_URL, {
@@ -121,20 +269,22 @@ function crearAlquiler(event) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     })
-        .then(async response => {
+        .then(function (response) {
             if (!response.ok) {
-                const errorMsg = await response.text();
-                throw new Error(errorMsg || 'No se pudo registrar la reserva.');
+                return response.text().then(function (errorMsg) {
+                    throw new Error(errorMsg || 'No se pudo registrar la reserva.');
+                });
             }
             return response.json();
         })
-        .then(nuevo => {
-            bootstrap.Modal.getInstance(document.getElementById('modalNuevoAlquiler')).hide();
+        .then(function (nuevo) {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevoAlquiler')).hide();
             document.getElementById('formNuevoAlquiler').reset();
             mostrarAlertaGeneral('Reserva #' + nuevo.idAlquiler + ' creada correctamente.', 'success');
             cargarAlquileres();
+            cargarCatalogos();
         })
-        .catch(error => {
+        .catch(function (error) {
             alerta.textContent = error.message;
             alerta.classList.remove('d-none');
         });
@@ -148,27 +298,29 @@ function entregarAlquiler(idAlquiler) {
     fetch(API_URL + '/' + idAlquiler + '/entregar', {
         method: 'PUT'
     })
-        .then(async response => {
+        .then(function (response) {
             if (!response.ok) {
-                const errorMsg = await response.text();
-                throw new Error(errorMsg || 'No se pudo entregar el alquiler.');
+                return response.text().then(function (errorMsg) {
+                    throw new Error(errorMsg || 'No se pudo entregar el alquiler.');
+                });
             }
             return response.json();
         })
-        .then(res => {
+        .then(function (res) {
             mostrarAlertaGeneral(
                 'Alquiler #' + idAlquiler + ' entregado (ACTIVO). Depósito cobrado: Q ' + Number(res.depositoCobrado).toFixed(2) + '.',
                 'success'
             );
             cargarAlquileres();
+            cargarCatalogos();
         })
-        .catch(error => {
+        .catch(function (error) {
             mostrarAlertaGeneral(error.message, 'danger');
         });
 }
 
 function alternarCamposPago() {
-    const metodo = document.getElementById('devMetodoPago').value;
+    var metodo = document.getElementById('devMetodoPago').value;
     document.getElementById('bloquePagoEfectivo').classList.toggle('d-none', metodo !== 'EFECTIVO');
     document.getElementById('bloquePagoTarjeta').classList.toggle('d-none', metodo !== 'TARJETA');
 }
@@ -179,37 +331,72 @@ function abrirModalDevolucion(idAlquiler) {
     document.getElementById('devolucionIdAlquiler').value = idAlquiler;
     document.getElementById('lblDevolucionId').innerText = idAlquiler;
     alternarCamposPago();
-    new bootstrap.Modal(document.getElementById('modalDevolucion')).show();
+
+    var alquiler = alquileresCache.find(function (a) { return a.idAlquiler === idAlquiler; });
+    var contEq = document.getElementById('contenedorDevEquipos');
+    var contAcc = document.getElementById('contenedorDevAccesorios');
+
+    if (contEq) {
+        if (alquiler && alquiler.alquilerEquiposLista && alquiler.alquilerEquiposLista.length > 0) {
+            contEq.innerHTML = alquiler.alquilerEquiposLista.map(function (ae) {
+                var desc = equiposMap[ae.idEquipo] || ('Equipo #' + ae.idEquipo);
+                return '<div class="form-check">' +
+                    '<input class="form-check-input check-dev-danado" type="checkbox" value="' + ae.idEquipo + '" id="devEq_' + ae.idEquipo + '">' +
+                    '<label class="form-check-label" for="devEq_' + ae.idEquipo + '">' + desc + ' (Marcar como DAÑADO)</label>' +
+                    '</div>';
+            }).join('');
+        } else {
+            contEq.innerHTML = '<span class="text-muted small">Sin equipos asociados.</span>';
+        }
+    }
+
+    if (contAcc) {
+        if (alquiler && alquiler.alquilerAccesoriosLista && alquiler.alquilerAccesoriosLista.length > 0) {
+            contAcc.innerHTML = alquiler.alquilerAccesoriosLista.map(function (aa) {
+                var nombre = accesoriosMap[aa.idAccesorio] || ('Accesorio #' + aa.idAccesorio);
+                return '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                    '<span>' + nombre + ' (Alquilados: ' + aa.cantidad + ')</span>' +
+                    '<input type="number" class="form-control form-control-sm input-dev-extraviado" style="width: 75px;" ' +
+                    'data-id="' + aa.idAccesorio + '" data-cant="' + aa.cantidad + '" min="0" max="' + aa.cantidad + '" value="0">' +
+                    '</div>';
+            }).join('');
+        } else {
+            contAcc.innerHTML = '<span class="text-muted small">Sin accesorios asociados.</span>';
+        }
+    }
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDevolucion')).show();
 }
 
 function procesarDevolucion(event) {
     event.preventDefault();
-    const alerta = document.getElementById('alertaDevolucion');
+    var alerta = document.getElementById('alertaDevolucion');
     alerta.classList.add('d-none');
 
-    const idAlquiler = document.getElementById('devolucionIdAlquiler').value;
-    const eqDanado = parseInt(document.getElementById('devEquipoDanado').value);
-    const accExtraviado = document.getElementById('devAccesorioExtraviado').value;
-    const metodoPago = document.getElementById('devMetodoPago').value;
+    var idAlquiler = document.getElementById('devolucionIdAlquiler').value;
+    var metodoPago = document.getElementById('devMetodoPago').value;
 
-    const equiposDevueltos = [];
-    if (!isNaN(eqDanado)) {
-        equiposDevueltos.push({ idEquipo: eqDanado, estadoDevolucion: 'DAÑADO' });
-    }
+    var equiposDevueltos = [];
+    document.querySelectorAll('.check-dev-danado:checked').forEach(function (chk) {
+        equiposDevueltos.push({
+            idEquipo: parseInt(chk.value),
+            estadoDevolucion: 'DAÑADO'
+        });
+    });
 
-    const accesoriosDevueltos = [];
-    if (accExtraviado.trim() !== '') {
-        const partes = accExtraviado.split(':');
-        if (partes.length === 2) {
+    var accesoriosDevueltos = [];
+    document.querySelectorAll('.input-dev-extraviado').forEach(function (inp) {
+        var extraviadas = parseInt(inp.value || '0');
+        if (extraviadas > 0) {
             accesoriosDevueltos.push({
-                idAccesorio: parseInt(partes[0].trim()),
-                cantidad: parseInt(partes[1].trim()),
-                unidadesExtraviadas: parseInt(partes[1].trim())
+                idAccesorio: parseInt(inp.dataset.id),
+                cantidad: parseInt(inp.dataset.cant),
+                unidadesExtraviadas: extraviadas
             });
         }
-    }
+    });
 
-    const payload = {
+    var payload = {
         alquilerEquiposLista: equiposDevueltos,
         alquilerAccesoriosLista: accesoriosDevueltos,
         metodoPago: metodoPago,
@@ -222,15 +409,16 @@ function procesarDevolucion(event) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     })
-        .then(async response => {
+        .then(function (response) {
             if (!response.ok) {
-                const errorMsg = await response.text();
-                throw new Error(errorMsg);
+                return response.text().then(function (errorMsg) {
+                    throw new Error(errorMsg);
+                });
             }
             return response.json();
         })
-        .then(res => {
-            let resumen =
+        .then(function (res) {
+            var resumen =
                 'Alquiler #' + idAlquiler + ' finalizado.\n\n' +
                 'Uso equipos (H): Q ' + Number(res.totalUsoEquipos).toFixed(2) + '\n' +
                 'Accesorios (A): Q ' + Number(res.totalAccesorios).toFixed(2) + '\n' +
@@ -253,11 +441,12 @@ function procesarDevolucion(event) {
             }
 
             alert(resumen);
-            bootstrap.Modal.getInstance(document.getElementById('modalDevolucion')).hide();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDevolucion')).hide();
             document.getElementById('formDevolucion').reset();
             cargarAlquileres();
+            cargarCatalogos();
         })
-        .catch(error => {
+        .catch(function (error) {
             alerta.textContent = error.message;
             alerta.className = 'alert alert-danger';
             alerta.classList.remove('d-none');
@@ -270,9 +459,10 @@ function formatearFecha(fechaStr) {
 }
 
 function mostrarAlertaGeneral(mensaje, tipo) {
-    const alerta = document.getElementById('alertaGeneral');
+    var alerta = document.getElementById('alertaGeneral');
+    if (!alerta) return;
     alerta.textContent = mensaje;
     alerta.className = 'alert alert-' + tipo;
     alerta.classList.remove('d-none');
-    setTimeout(() => alerta.classList.add('d-none'), 5000);
+    setTimeout(function () { alerta.classList.add('d-none'); }, 5000);
 }
