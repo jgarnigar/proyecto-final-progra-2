@@ -16,7 +16,7 @@ public class ClientesService {
     }
 
     public Clientes registrarCliente(Clientes cliente) {
-        // Validaciones de negocio (campos obligatorios)
+
         if (cliente.getNombre() == null || cliente.getNombre().isBlank()) {
             throw new IllegalArgumentException("El nombre del cliente es obligatorio.");
         }

@@ -26,7 +26,7 @@ public class AccesorioHistorialDAO {
              PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setInt(1, historial.getIdAccesorio());
-            // Usando setObject para guardar el LocalDateTime
+
             ps.setObject(2, historial.getFecha());
             ps.setInt(3, historial.getCantidad());
             ps.setString(4, historial.getTipoMovimiento());
@@ -49,7 +49,7 @@ public class AccesorioHistorialDAO {
         }
     }
 
-    //  Consultar todo el historial de un accesorio específico
+
     public List<Accesoriohistorial> obtenerHistorialPorAccesorio(int idAccesorio) {
         List<Accesoriohistorial> lista = new ArrayList<>();
         String sql = "SELECT id_movimiento, id_accesorio, fecha, cantidad, tipo_movimiento FROM accesorio_historial WHERE id_accesorio = ? ORDER BY fecha DESC";

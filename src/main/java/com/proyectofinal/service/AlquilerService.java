@@ -139,11 +139,11 @@ public class AlquilerService {
         LocalDateTime fechaEntrega = alquilerBD.getFechaReal() != null ? alquilerBD.getFechaReal() : LocalDateTime.now();
         LocalDateTime fechaDevolucion = LocalDateTime.now();
 
-        // H: horas de uso redondeadas hacia arriba (mínimo 1)
+        // Redondeo de horas
         long minutosUso = Math.max(0, Duration.between(fechaEntrega, fechaDevolucion).toMinutes());
         long horasUso = Math.max(1, (long) Math.ceil(minutosUso / 60.0));
 
-        // R: tolerancia de 15 minutos, luego cada hora o fracción a 1.5x
+        // 15 minutos de penalizacion
         long minutosRetraso = Duration.between(alquilerBD.getFechaEstimada(), fechaDevolucion).toMinutes();
         long horasRetraso = (minutosRetraso > 15) ? (long) Math.ceil(minutosRetraso / 60.0) : 0;
 
@@ -152,7 +152,7 @@ public class AlquilerService {
         BigDecimal sumaDanos = BigDecimal.ZERO;
         BigDecimal sumaAccesorios = BigDecimal.ZERO;
 
-        // 1. Cálculo de uso (H * tarifa), recargos (R) y daños en equipos (D)
+        // calculo de uso, dano, horas y tarifa
         if (alquilerBD.getAlquilerEquiposLista() != null) {
             for (AlquilerEquipos aeBD : alquilerBD.getAlquilerEquiposLista()) {
                 Equipos equipoBD = equiposDAO.consultar(aeBD.getIdEquipo());
@@ -188,7 +188,7 @@ public class AlquilerService {
             }
         }
 
-        // 2. Cálculo de tarifas de accesorios (A) y extravíos (D)
+        // caculo de accesorios y si son extraviados
         if (alquilerBD.getAlquilerAccesoriosLista() != null) {
             for (AlquilerAccesorios aaBD : alquilerBD.getAlquilerAccesoriosLista()) {
                 Accesorios accesorioBD = accesoriosDAO.consultar(aaBD.getIdAccesorio());
@@ -221,7 +221,6 @@ public class AlquilerService {
             }
         }
 
-        // 3. Aplicación del depósito contra D
         BigDecimal deposito = alquilerBD.getDepositoCobrado() != null ? alquilerBD.getDepositoCobrado() : BigDecimal.ZERO;
         BigDecimal excedenteDeposito = BigDecimal.ZERO;
         BigDecimal saldoAgregado = BigDecimal.ZERO;
@@ -232,11 +231,11 @@ public class AlquilerService {
             excedenteDeposito = deposito.subtract(sumaDanos);
         }
 
-        // 4. Total a pagar en caja: Σ(H × tarifa) + A + R
+        // tal a pagar en caja: Σ(H × tarifa) + A + R
         BigDecimal totalCobrarCaja = sumaUsoEquipos.add(sumaAccesorios).add(sumaRecargos).setScale(2, RoundingMode.HALF_UP);
         BigDecimal totalGeneral = totalCobrarCaja.add(sumaDanos).setScale(2, RoundingMode.HALF_UP);
 
-        // 5. Validación de pago en Efectivo o Tarjeta (si falla, lanza excepción y hace rollback)
+        //pago en Efectivo o Tarjeta
         String metodoPago = datosDevolucion.getMetodoPago() != null ? datosDevolucion.getMetodoPago().trim().toUpperCase() : "";
         BigDecimal cambio = BigDecimal.ZERO;
         String referencia = null;
@@ -257,7 +256,7 @@ public class AlquilerService {
             throw new IllegalArgumentException("Debe seleccionar un método de pago válido (EFECTIVO o TARJETA).");
         }
 
-        // 6. Actualizar saldo pendiente del cliente (solo si D > Depósito)
+        // Actualizar saldo pendiente del cliente (solo si D > Depósito)
         if (saldoAgregado.compareTo(BigDecimal.ZERO) > 0) {
             Clientes cliente = clientesDAO.consultar(alquilerBD.getIdCliente());
             BigDecimal saldoActual = cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : BigDecimal.ZERO;
@@ -265,14 +264,13 @@ public class AlquilerService {
             clientesDAO.modificar(cliente);
         }
 
-        // 7. Finalizar alquiler y registrar el pago
         alquilerBD.setFechaReal(fechaDevolucion);
         alquilerBD.setEstado("FINALIZADO");
         alquilerDAO.modificar(alquilerBD);
 
         pagoDAO.registrarPago(idAlquiler, fechaDevolucion, metodoPago, totalCobrarCaja, referencia);
 
-        // 8. Llenar desglose para mostrar recibo en pantalla
+        // Dsglose para mostrar recibo en pantalla
         alquilerBD.setMetodoPago(metodoPago);
         alquilerBD.setNumeroReferencia(referencia);
         alquilerBD.setTotalUsoEquipos(sumaUsoEquipos.setScale(2, RoundingMode.HALF_UP));
