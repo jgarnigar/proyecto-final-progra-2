@@ -14,73 +14,88 @@ public class Alquileres {
   private LocalDateTime fechaEstimada;
   private LocalDateTime fechaReal;
 
-  // Inicialización para evitar NullPointerException al agregar elementos
   private List<AlquilerAccesorios> alquilerAccesoriosLista = new ArrayList<>();
   private List<AlquilerEquipos> alquilerEquiposLista = new ArrayList<>();
 
-  public int getIdAlquiler() {
-    return idAlquiler;
-  }
+  // Campos para procesar el pago en devolución
+  private String metodoPago; // "EFECTIVO" o "TARJETA"
+  private BigDecimal montoRecibido;
+  private Boolean tarjetaAprobada;
 
-  public void setIdAlquiler(int idAlquiler) {
-    this.idAlquiler = idAlquiler;
-  }
+  // Campos de respuesta con el desglose del cálculo
+  private String numeroReferencia;
+  private BigDecimal totalUsoEquipos;
+  private BigDecimal totalAccesorios;
+  private BigDecimal totalRecargos;
+  private BigDecimal totalDanos;
+  private BigDecimal totalGeneral;
+  private BigDecimal excedenteDepositoDevuelto;
+  private BigDecimal saldoAgregadoCliente;
+  private BigDecimal totalCobradoCaja;
+  private BigDecimal cambioDevuelto;
 
-  public int getIdCliente() {
-    return idCliente;
-  }
+  public int getIdAlquiler() { return idAlquiler; }
+  public void setIdAlquiler(int idAlquiler) { this.idAlquiler = idAlquiler; }
 
-  public void setIdCliente(int idCliente) {
-    this.idCliente = idCliente;
-  }
+  public int getIdCliente() { return idCliente; }
+  public void setIdCliente(int idCliente) { this.idCliente = idCliente; }
 
-  public BigDecimal getDepositoCobrado() {
-    return depositoCobrado;
-  }
+  public BigDecimal getDepositoCobrado() { return depositoCobrado; }
+  public void setDepositoCobrado(BigDecimal depositoCobrado) { this.depositoCobrado = depositoCobrado; }
 
-  public void setDepositoCobrado(BigDecimal depositoCobrado) {
-    this.depositoCobrado = depositoCobrado;
-  }
+  public String getEstado() { return estado; }
+  public void setEstado(String estado) { this.estado = estado; }
 
-  public String getEstado() {
-    return estado;
-  }
+  public LocalDateTime getFechaEstimada() { return fechaEstimada; }
+  public void setFechaEstimada(LocalDateTime fechaEstimada) { this.fechaEstimada = fechaEstimada; }
 
-  public void setEstado(String estado) {
-    this.estado = estado;
-  }
+  public LocalDateTime getFechaReal() { return fechaReal; }
+  public void setFechaReal(LocalDateTime fechaReal) { this.fechaReal = fechaReal; }
 
-  public LocalDateTime getFechaEstimada() {
-    return fechaEstimada;
-  }
+  public List<AlquilerAccesorios> getAlquilerAccesoriosLista() { return alquilerAccesoriosLista; }
+  public void setAlquilerAccesoriosLista(List<AlquilerAccesorios> alquilerAccesoriosLista) { this.alquilerAccesoriosLista = alquilerAccesoriosLista; }
 
-  public void setFechaEstimada(LocalDateTime fechaEstimada) {
-    this.fechaEstimada = fechaEstimada;
-  }
+  public List<AlquilerEquipos> getAlquilerEquiposLista() { return alquilerEquiposLista; }
+  public void setAlquilerEquiposLista(List<AlquilerEquipos> alquilerEquiposLista) { this.alquilerEquiposLista = alquilerEquiposLista; }
 
-  public LocalDateTime getFechaReal() {
-    return fechaReal;
-  }
+  public String getMetodoPago() { return metodoPago; }
+  public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
 
-  public void setFechaReal(LocalDateTime fechaReal) {
-    this.fechaReal = fechaReal;
-  }
+  public BigDecimal getMontoRecibido() { return montoRecibido; }
+  public void setMontoRecibido(BigDecimal montoRecibido) { this.montoRecibido = montoRecibido; }
 
-  public List<AlquilerAccesorios> getAlquilerAccesoriosLista() {
-    return alquilerAccesoriosLista;
-  }
+  public Boolean getTarjetaAprobada() { return tarjetaAprobada; }
+  public void setTarjetaAprobada(Boolean tarjetaAprobada) { this.tarjetaAprobada = tarjetaAprobada; }
 
-  public void setAlquilerAccesoriosLista(List<AlquilerAccesorios> alquilerAccesoriosLista) {
-    this.alquilerAccesoriosLista = alquilerAccesoriosLista;
-  }
+  public String getNumeroReferencia() { return numeroReferencia; }
+  public void setNumeroReferencia(String numeroReferencia) { this.numeroReferencia = numeroReferencia; }
 
-  public List<AlquilerEquipos> getAlquilerEquiposLista() {
-    return alquilerEquiposLista;
-  }
+  public BigDecimal getTotalUsoEquipos() { return totalUsoEquipos; }
+  public void setTotalUsoEquipos(BigDecimal totalUsoEquipos) { this.totalUsoEquipos = totalUsoEquipos; }
 
-  public void setAlquilerEquiposLista(List<AlquilerEquipos> alquilerEquiposLista) {
-    this.alquilerEquiposLista = alquilerEquiposLista;
-  }
+  public BigDecimal getTotalAccesorios() { return totalAccesorios; }
+  public void setTotalAccesorios(BigDecimal totalAccesorios) { this.totalAccesorios = totalAccesorios; }
+
+  public BigDecimal getTotalRecargos() { return totalRecargos; }
+  public void setTotalRecargos(BigDecimal totalRecargos) { this.totalRecargos = totalRecargos; }
+
+  public BigDecimal getTotalDanos() { return totalDanos; }
+  public void setTotalDanos(BigDecimal totalDanos) { this.totalDanos = totalDanos; }
+
+  public BigDecimal getTotalGeneral() { return totalGeneral; }
+  public void setTotalGeneral(BigDecimal totalGeneral) { this.totalGeneral = totalGeneral; }
+
+  public BigDecimal getExcedenteDepositoDevuelto() { return excedenteDepositoDevuelto; }
+  public void setExcedenteDepositoDevuelto(BigDecimal excedenteDepositoDevuelto) { this.excedenteDepositoDevuelto = excedenteDepositoDevuelto; }
+
+  public BigDecimal getSaldoAgregadoCliente() { return saldoAgregadoCliente; }
+  public void setSaldoAgregadoCliente(BigDecimal saldoAgregadoCliente) { this.saldoAgregadoCliente = saldoAgregadoCliente; }
+
+  public BigDecimal getTotalCobradoCaja() { return totalCobradoCaja; }
+  public void setTotalCobradoCaja(BigDecimal totalCobradoCaja) { this.totalCobradoCaja = totalCobradoCaja; }
+
+  public BigDecimal getCambioDevuelto() { return cambioDevuelto; }
+  public void setCambioDevuelto(BigDecimal cambioDevuelto) { this.cambioDevuelto = cambioDevuelto; }
 
   public void agregarAlquilerAccesorios(AlquilerAccesorios alquilerAccesorios) {
     this.alquilerAccesoriosLista.add(alquilerAccesorios);

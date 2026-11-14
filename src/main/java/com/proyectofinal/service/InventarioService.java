@@ -5,13 +5,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.proyectofinal.DAO.AccesoriosDAO;
+import com.proyectofinal.DAO.AccesorioHistorialDAO;
 import com.proyectofinal.DAO.EquiposDAO;
 import com.proyectofinal.DAO.MantenimientoDAO;
-import com.proyectofinal.DAO.AccesorioHistorialDAO;
+import com.proyectofinal.modelo.Accesorios;
+import com.proyectofinal.modelo.Accesoriohistorial;
 import com.proyectofinal.modelo.Equipos;
 import com.proyectofinal.modelo.Mantenimientos;
-import com.proyectofinal.modelo.Accesoriohistorial;
 
 @Service
 public class InventarioService {
@@ -19,13 +22,17 @@ public class InventarioService {
     private final EquiposDAO equiposDAO;
     private final MantenimientoDAO mantenimientoDAO;
     private final AccesorioHistorialDAO accesorioHistorialDAO;
+    private final AccesoriosDAO accesoriosDAO;
 
-    public InventarioService(EquiposDAO equiposDAO, MantenimientoDAO mantenimientoDAO, AccesorioHistorialDAO accesorioHistorialDAO) {
+    public InventarioService(EquiposDAO equiposDAO, MantenimientoDAO mantenimientoDAO,
+                             AccesorioHistorialDAO accesorioHistorialDAO, AccesoriosDAO accesoriosDAO) {
         this.equiposDAO = equiposDAO;
         this.mantenimientoDAO = mantenimientoDAO;
         this.accesorioHistorialDAO = accesorioHistorialDAO;
+        this.accesoriosDAO = accesoriosDAO;
     }
 
+    @Transactional
     public Mantenimientos registrarMantenimiento(Mantenimientos mantenimiento) {
         Equipos equipo = equiposDAO.consultar(mantenimiento.getIdEquipo());
 
@@ -54,13 +61,11 @@ public class InventarioService {
         }
 
         boolean registrado = mantenimientoDAO.registrarMantenimiento(mantenimiento);
-
         if (!registrado) {
             throw new RuntimeException("No se pudo registrar el mantenimiento.");
         }
 
         boolean actualizado = equiposDAO.actualizarEstado(equipo.getIdEquipo(), "EN MANTENIMIENTO");
-
         if (!actualizado) {
             throw new RuntimeException("No se pudo actualizar el estado del equipo.");
         }
@@ -88,19 +93,46 @@ public class InventarioService {
         }
 
         boolean actualizado = equiposDAO.actualizarEstado(idEquipo, "DISPONIBLE");
-
         if (!actualizado) {
             throw new RuntimeException("No se pudo cerrar el mantenimiento.");
         }
     }
 
+    @Transactional
     public Accesoriohistorial registrarMovimientoAccesorio(Accesoriohistorial historial) {
+        Accesorios accesorio = accesoriosDAO.consultar(historial.getIdAccesorio());
+        if (accesorio == null) {
+            throw new RuntimeException("El accesorio no existe.");
+        }
+
+        if (historial.getCantidad() <= 0) {
+            throw new RuntimeException("La cantidad debe ser mayor a cero.");
+        }
+
+        if (historial.getTipoMovimiento() == null || historial.getTipoMovimiento().isBlank()) {
+            historial.setTipoMovimiento("SALIDA_POR_MANTENIMIENTO");
+        }
+
+        boolean esEntrada = historial.getTipoMovimiento().toUpperCase().startsWith("ENTRADA");
+
+        if (esEntrada) {
+            accesorio.setExistenciaActual(accesorio.getExistenciaActual() + historial.getCantidad());
+        } else {
+            if (accesorio.getExistenciaActual() < historial.getCantidad()) {
+                throw new RuntimeException("No hay stock suficiente para el accesorio: " + accesorio.getNombre());
+            }
+            accesorio.setExistenciaActual(accesorio.getExistenciaActual() - historial.getCantidad());
+        }
+
+        if (!accesoriosDAO.modificar(accesorio)) {
+            throw new RuntimeException("No se pudo actualizar la existencia del accesorio.");
+        }
+
         if (historial.getFecha() == null) {
             historial.setFecha(LocalDateTime.now());
         }
 
         boolean registrado = accesorioHistorialDAO.registrarMovimiento(historial);
-
         if (!registrado) {
             throw new RuntimeException("No se pudo registrar el historial del accesorio.");
         }
@@ -109,6 +141,10 @@ public class InventarioService {
     }
 
     public List<Accesoriohistorial> obtenerHistorialAccesorio(int idAccesorio) {
+        if (accesoriosDAO.consultar(idAccesorio) == null) {
+            throw new RuntimeException("El accesorio no existe.");
+        }
+
         return accesorioHistorialDAO.obtenerHistorialPorAccesorio(idAccesorio);
     }
 }

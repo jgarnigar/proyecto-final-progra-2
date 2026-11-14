@@ -10,6 +10,7 @@ import java.util.List; // Importación necesaria para el método GET
 
 @RestController
 @RequestMapping("/api/alquileres")
+@CrossOrigin(origins = "*")
 public class AlquilerController {
 
     private final AlquilerService alquilerService;
