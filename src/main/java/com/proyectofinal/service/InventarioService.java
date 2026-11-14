@@ -8,21 +8,25 @@ import org.springframework.stereotype.Service;
 
 import com.proyectofinal.DAO.EquiposDAO;
 import com.proyectofinal.DAO.MantenimientoDAO;
+import com.proyectofinal.DAO.AccesorioHistorialDAO;
 import com.proyectofinal.modelo.Equipos;
 import com.proyectofinal.modelo.Mantenimientos;
+import com.proyectofinal.modelo.Accesoriohistorial;
 
 @Service
 public class InventarioService {
+
     private final EquiposDAO equiposDAO;
     private final MantenimientoDAO mantenimientoDAO;
+    private final AccesorioHistorialDAO accesorioHistorialDAO;
 
-    public InventarioService(EquiposDAO equiposDAO, MantenimientoDAO mantenimientoDAO) {
+    public InventarioService(EquiposDAO equiposDAO, MantenimientoDAO mantenimientoDAO, AccesorioHistorialDAO accesorioHistorialDAO) {
         this.equiposDAO = equiposDAO;
         this.mantenimientoDAO = mantenimientoDAO;
+        this.accesorioHistorialDAO = accesorioHistorialDAO;
     }
 
     public Mantenimientos registrarMantenimiento(Mantenimientos mantenimiento) {
-
         Equipos equipo = equiposDAO.consultar(mantenimiento.getIdEquipo());
 
         if (equipo == null) {
@@ -80,7 +84,7 @@ public class InventarioService {
         }
 
         if (!"EN MANTENIMIENTO".equals(equipo.getEstado())) {
-            throw new RuntimeException( "El equipo no se encuentra en mantenimiento.");
+            throw new RuntimeException("El equipo no se encuentra en mantenimiento.");
         }
 
         boolean actualizado = equiposDAO.actualizarEstado(idEquipo, "DISPONIBLE");
@@ -88,5 +92,23 @@ public class InventarioService {
         if (!actualizado) {
             throw new RuntimeException("No se pudo cerrar el mantenimiento.");
         }
+    }
+
+    public Accesoriohistorial registrarMovimientoAccesorio(Accesoriohistorial historial) {
+        if (historial.getFecha() == null) {
+            historial.setFecha(LocalDateTime.now());
+        }
+
+        boolean registrado = accesorioHistorialDAO.registrarMovimiento(historial);
+
+        if (!registrado) {
+            throw new RuntimeException("No se pudo registrar el historial del accesorio.");
+        }
+
+        return historial;
+    }
+
+    public List<Accesoriohistorial> obtenerHistorialAccesorio(int idAccesorio) {
+        return accesorioHistorialDAO.obtenerHistorialPorAccesorio(idAccesorio);
     }
 }
