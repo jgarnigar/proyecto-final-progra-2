@@ -1,0 +1,141 @@
+.header-reportes {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 2rem;
+    background-color: #1a1a2e;
+    color: #ffffff;
+}
+
+.btn-volver {
+    color: #ffffff;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ffffff;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+.btn-volver:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.contenedor-principal {
+    max-width: 1100px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.panel-controles {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    background-color: #f4f6f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid #dce1e7;
+}
+
+.grupo-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.grupo-control select {
+    padding: 0.6rem 1rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    min-width: 260px;
+}
+
+.acciones-reporte {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-primario, .btn-secundario {
+    padding: 0.65rem 1.3rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-primario {
+    background-color: #0f3460;
+    color: #ffffff;
+}
+
+.btn-primario:hover {
+    background-color: #16213e;
+}
+
+.btn-secundario {
+    background-color: #e94560;
+    color: #ffffff;
+}
+
+.btn-secundario:hover {
+    background-color: #c73650;
+}
+
+/* Estilos específicos del área exportable a PDF */
+.documento-pdf {
+    background-color: #ffffff;
+    color: #000000;
+    padding: 2.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.encabezado-documento {
+    border-bottom: 2px solid #1a1a2e;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.encabezado-documento h2 {
+    margin: 0 0 0.4rem 0;
+    color: #1a1a2e;
+}
+
+.texto-fecha {
+    font-size: 0.9rem;
+    color: #555555;
+    margin: 0;
+}
+
+.tabla-datos {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.tabla-datos th, .tabla-datos td {
+    border: 1px solid #cccccc;
+    padding: 0.75rem;
+    text-align: left;
+    font-size: 0.95rem;
+}
+
+.tabla-datos th {
+    background-color: #1a1a2e;
+    color: #ffffff;
+}
+
+.tabla-datos tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.mensaje-estado {
+    margin: 1rem 0;
+    font-weight: 500;
+    color: #d9534f;
+}

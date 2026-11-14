@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo de Reportes - Sistema de Alquileres</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="reportes.css">
+    <!-- Librería para exportar a PDF directamente desde el navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <header class="header-reportes">
+        <h1>Generación de Reportes y Documentación PDF</h1>
+        <a href="../index.html" class="btn-volver">← Volver al Menú Principal</a>
+    </header>
+
+    <main class="contenedor-principal">
+        <section class="panel-controles">
+            <div class="grupo-control">
+                <label for="tipoReporte">Seleccione el tipo de reporte:</label>
+                <select id="tipoReporte">
+                    <option value="alquileres">Historial de Alquileres</option>
+                    <option value="clientes">Listado de Clientes</option>
+                    <option value="equipos">Inventario de Equipos</option>
+                    <option value="mantenimientos">Registro de Mantenimientos</option>
+                </select>
+            </div>
+
+            <div class="acciones-reporte">
+                <button id="btnCargarDatos" class="btn-primario">Cargar Vista Previa</button>
+                <button id="btnDescargarPDF" class="btn-secundario">Descargar PDF</button>
+            </div>
+        </section>
+
+        <!-- Área que se convertirá en PDF -->
+        <section id="areaImpresionPDF" class="documento-pdf">
+            <div class="encabezado-documento">
+                <h2>REPORTE OPERATIVO DEL SISTEMA</h2>
+                <p id="subtituloReporte">Categoría: Historial de Alquileres</p>
+                <p id="fechaGeneracion" class="texto-fecha"></p>
+            </div>
+
+            <div id="mensajeEstado" class="mensaje-estado"></div>
+
+            <table id="tablaReporte" class="tabla-datos">
+                <thead id="tablaHead"></thead>
+                <tbody id="tablaBody"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="reportes.js"></script>
+</body>
+</html>
