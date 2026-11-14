@@ -24,6 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let datosFiltrados = [];
     const folioActual = "RL-" + new Date().getFullYear() + "-" + Math.floor(100 + Math.random() * 900);
 
+    const columnasPorDefecto = {
+        alquileres: ["ID", "CLIENTE", "EQUIPO", "FECHA INICIO", "TOTAL", "ESTADO"],
+        clientes: ["ID", "NOMBRE", "DPI / NIT", "TELÉFONO", "CORREO", "ESTADO"],
+        equipos: ["ID", "TIPO", "MODELO", "TARIFA / HORA", "BATERÍA", "ESTADO"],
+        mantenimientos: ["ID", "EQUIPO", "DESCRIPCIÓN", "FECHA", "COSTO", "ESTADO"]
+    };
+
     const formatearMoneda = (valor) => {
         return "Q " + Number(valor || 0).toLocaleString("es-GT", {
             minimumFractionDigits: 2,
@@ -72,16 +79,40 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("prevKpiPromedio").textContent = formatearMoneda(promedio);
     };
 
-    const renderizarTabla = () => {
+    const dibujarTablaVaciaConEstructura = (textoFila) => {
+        const tipo = selectTipo.value;
+        const columnas = columnasPorDefecto[tipo] || ["ID", "DESCRIPCIÓN", "FECHA", "MONTO", "ESTADO"];
+
         tablaHead.innerHTML = "";
         tablaBody.innerHTML = "";
 
+        const filaHeader = document.createElement("tr");
+        columnas.forEach(col => {
+            const th = document.createElement("th");
+            th.textContent = col;
+            filaHeader.appendChild(th);
+        });
+        tablaHead.appendChild(filaHeader);
+
+        const trVacia = document.createElement("tr");
+        const tdVacia = document.createElement("td");
+        tdVacia.colSpan = columnas.length;
+        tdVacia.className = "text-center text-muted py-4";
+        tdVacia.textContent = textoFila;
+        trVacia.appendChild(tdVacia);
+        tablaBody.appendChild(trVacia);
+    };
+
+    const renderizarTabla = () => {
         if (!datosFiltrados || datosFiltrados.length === 0) {
-            mensajeEstado.textContent = "No hay registros que coincidan con la búsqueda actual.";
+            dibujarTablaVaciaConEstructura("Sin registros disponibles para mostrar en este reporte.");
             return;
         }
 
         mensajeEstado.textContent = "";
+        tablaHead.innerHTML = "";
+        tablaBody.innerHTML = "";
+
         const columnas = Object.keys(datosFiltrados[0]);
 
         const filaHeader = document.createElement("tr");
@@ -125,9 +156,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const cargarDatosReporte = async () => {
         const tipo = selectTipo.value;
-        mensajeEstado.textContent = "Sincronizando con base de datos...";
+        mensajeEstado.textContent = "";
         badgeSincronizacion.className = "badge bg-warning-subtle text-warning";
         badgeSincronizacion.textContent = "Sincronizando...";
+        dibujarTablaVaciaConEstructura("Consultando registros...");
 
         try {
             const respuesta = await fetch(`/api/${tipo}`);
@@ -143,12 +175,10 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error al obtener reporte:", error);
             datosOriginales = [];
             datosFiltrados = [];
-            badgeSincronizacion.className = "badge bg-danger-subtle text-danger";
-            badgeSincronizacion.textContent = "Sin Conexión";
+            badgeSincronizacion.className = "badge bg-secondary-subtle text-secondary";
+            badgeSincronizacion.textContent = "Vista Plantilla";
             calcularMetricas();
-            tablaHead.innerHTML = "";
-            tablaBody.innerHTML = "";
-            mensajeEstado.textContent = `No se pudieron cargar los datos (${error.message}). Verifica que Spring Boot esté activo.`;
+            dibujarTablaVaciaConEstructura("Documento listo • Sin registros cargados actualmente en la base de datos.");
         }
     };
 
