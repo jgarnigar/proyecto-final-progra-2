@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class AlquilerService {
@@ -24,6 +25,13 @@ public class AlquilerService {
         this.clientesDAO = clientesDAO;
         this.accesoriosDAO = accesoriosDAO;
         this.equiposDAO = equiposDAO;
+    }
+
+    // NUEVO MÉTODO AGREGADO: Devuelve la lista completa de alquileres
+    public List<Alquileres> obtenerTodos() {
+        // NOTA: Si en tu AlquilerDAO el método se llama "listar()" o "consultarTodos()",
+        // debes cambiar "obtenerTodos()" por el nombre correcto en la siguiente línea:
+        return alquilerDAO.listar();
     }
 
     public Alquileres procesarNuevoAlquiler(Alquileres alquiler) {

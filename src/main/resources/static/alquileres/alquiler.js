@@ -1,63 +1,74 @@
-// URL base de tu API Spring Boot
 const API_URL = '/api/alquileres';
 
-// Cargar la tabla al iniciar
 document.addEventListener('DOMContentLoaded', cargarAlquileres);
 
-// 1. GET: Cargar todos los alquileres
 function cargarAlquileres() {
     fetch(API_URL)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error('Error al conectar con la API: ' + response.status);
+            return response.json();
+        })
         .then(alquileres => {
+            console.log(alquileres);
+
             const cuerpoTabla = document.getElementById('cuerpoTablaAlquileres');
             cuerpoTabla.innerHTML = '';
 
+            if (!alquileres || alquileres.length === 0) {
+                cuerpoTabla.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No hay alquileres registrados aún.</td></tr>`;
+                return;
+            }
+
             alquileres.forEach(alq => {
-                const fila = document.createElement('tr');
+                const id = alq.idAlquiler || alq.id || 'N/A';
+                const clienteInfo = alq.cliente ? alq.cliente.nombre : (alq.idCliente || 'N/A');
+                const deposito = alq.depositoCobrado !== undefined ? alq.depositoCobrado : 0;
+                const estado = alq.estado || 'DESCONOCIDO';
+                const fecha = alq.fechaEstimada ? new Date(alq.fechaEstimada).toLocaleString() : 'Sin fecha';
 
-                // Colores para los estados
                 let badgeClass = 'bg-secondary';
-                if (alq.estado === 'RESERVADO') badgeClass = 'bg-warning text-dark';
-                if (alq.estado === 'ACTIVO') badgeClass = 'bg-primary';
-                if (alq.estado === 'FINALIZADO') badgeClass = 'bg-success';
+                if (estado === 'RESERVADO') badgeClass = 'bg-warning text-dark';
+                if (estado === 'ACTIVO') badgeClass = 'bg-primary';
+                if (estado === 'FINALIZADO') badgeClass = 'bg-success';
 
-                // Botones dinámicos según el estado
                 let botones = '';
-                if (alq.estado === 'RESERVADO') {
-                    botones = `<button class="btn btn-sm btn-success me-1" onclick="entregarAlquiler(${alq.idAlquiler})">Entregar</button>`;
-                } else if (alq.estado === 'ACTIVO') {
-                    botones = `<button class="btn btn-sm btn-dark" onclick="abrirModalDevolucion(${alq.idAlquiler})">Recibir / Cobrar</button>`;
+                if (estado === 'RESERVADO') {
+                    botones = `<button class="btn btn-sm btn-success me-1" onclick="entregarAlquiler(${id})">Entregar</button>`;
+                } else if (estado === 'ACTIVO') {
+                    botones = `<button class="btn btn-sm btn-dark" onclick="abrirModalDevolucion(${id})">Recibir / Cobrar</button>`;
                 }
 
+                const fila = document.createElement('tr');
                 fila.innerHTML = `
-                    <td class="fw-bold">#${alq.idAlquiler}</td>
-                    <td>${alq.idCliente}</td>
-                    <td>Q ${alq.depositoCobrado.toFixed(2)}</td>
-                    <td>${new Date(alq.fechaEstimada).toLocaleString()}</td>
-                    <td><span class="badge ${badgeClass}">${alq.estado}</span></td>
+                    <td class="fw-bold">#${id}</td>
+                    <td>${clienteInfo}</td>
+                    <td>Q ${parseFloat(deposito).toFixed(2)}</td>
+                    <td>${fecha}</td>
+                    <td><span class="badge ${badgeClass}">${estado}</span></td>
                     <td>${botones}</td>
                 `;
                 cuerpoTabla.appendChild(fila);
             });
         })
-        .catch(error => console.error('Error al cargar alquileres:', error));
+        .catch(error => {
+            console.error('Error cargando la tabla:', error);
+            const cuerpoTabla = document.getElementById('cuerpoTablaAlquileres');
+            cuerpoTabla.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Ocurrió un error al cargar los datos: ${error.message}</td></tr>`;
+        });
 }
 
-// 2. POST: Registrar nueva reserva
 function registrarReserva(event) {
-    event.preventDefault(); // Evita que se recargue la página
+    event.preventDefault();
 
     const idCliente = document.getElementById('reservaIdCliente').value;
     const fechaEstimada = document.getElementById('reservaFechaEstimada').value;
 
-    // Convertir el input de equipos "1, 2" a un arreglo de objetos JSON
     const equiposInput = document.getElementById('reservaEquipos').value;
     const equiposLista = equiposInput.split(',').map(id => ({
         idEquipo: parseInt(id.trim()),
         estadoDevolucion: "BUENO"
     })).filter(eq => !isNaN(eq.idEquipo));
 
-    // Convertir el input de accesorios "1:2, 2:1" a objetos JSON
     const accInput = document.getElementById('reservaAccesorios').value;
     const accesoriosLista = accInput ? accInput.split(',').map(item => {
         const partes = item.split(':');
@@ -68,7 +79,6 @@ function registrarReserva(event) {
         };
     }).filter(acc => !isNaN(acc.idAccesorio)) : [];
 
-    // Construir el JSON exacto que espera Spring Boot
     const payload = {
         idCliente: parseInt(idCliente),
         fechaEstimada: fechaEstimada,
@@ -89,7 +99,7 @@ function registrarReserva(event) {
             return response.json();
         })
         .then(data => {
-            alert('Reserva creada con éxito. ID: ' + data.idAlquiler);
+            alert('Reserva creada con éxito. ID: ' + (data.idAlquiler || data.id));
             bootstrap.Modal.getInstance(document.getElementById('modalNuevoAlquiler')).hide();
             document.getElementById('formNuevaReserva').reset();
             cargarAlquileres();
@@ -97,7 +107,6 @@ function registrarReserva(event) {
         .catch(error => alert('Error al crear reserva: ' + error.message));
 }
 
-// 3. PUT: Entregar Alquiler (RESERVADO -> ACTIVO)
 function entregarAlquiler(idAlquiler) {
     if (!confirm(`¿Confirmas la entrega de los equipos para el alquiler #${idAlquiler}? Se cobrará el depósito.`)) return;
 
@@ -111,14 +120,13 @@ function entregarAlquiler(idAlquiler) {
             }
             return response.json();
         })
-        .then(data => {
+        .then(() => {
             alert('Equipos entregados y alquiler activado.');
             cargarAlquileres();
         })
         .catch(error => alert('Error al entregar: ' + error.message));
 }
 
-// 4. PUT: Preparar y enviar Devolución (ACTIVO -> FINALIZADO)
 function abrirModalDevolucion(idAlquiler) {
     document.getElementById('devolucionIdAlquiler').value = idAlquiler;
     document.getElementById('lblDevolucionId').innerText = idAlquiler;
@@ -132,7 +140,6 @@ function procesarDevolucion(event) {
     const eqDanado = parseInt(document.getElementById('devEquipoDanado').value);
     const accExtraviado = document.getElementById('devAccesorioExtraviado').value;
 
-    // Construir listas de devolución (simulando los datos de lo dañado)
     const equiposDevueltos = [];
     if (!isNaN(eqDanado)) {
         equiposDevueltos.push({ idEquipo: eqDanado, estadoDevolucion: "DAÑADO" });
@@ -141,11 +148,13 @@ function procesarDevolucion(event) {
     const accesoriosDevueltos = [];
     if (accExtraviado) {
         const partes = accExtraviado.split(':');
-        accesoriosDevueltos.push({
-            idAccesorio: parseInt(partes[0].trim()),
-            cantidad: parseInt(partes[1].trim()), // Asumimos que alquiló esa cantidad
-            unidadesExtraviadas: parseInt(partes[1].trim())
-        });
+        if (partes.length === 2) {
+            accesoriosDevueltos.push({
+                idAccesorio: parseInt(partes[0].trim()),
+                cantidad: parseInt(partes[1].trim()),
+                unidadesExtraviadas: parseInt(partes[1].trim())
+            });
+        }
     }
 
     const payload = {
@@ -165,7 +174,7 @@ function procesarDevolucion(event) {
             }
             return response.json();
         })
-        .then(data => {
+        .then(() => {
             alert('Alquiler finalizado correctamente.');
             bootstrap.Modal.getInstance(document.getElementById('modalDevolucion')).hide();
             document.getElementById('formDevolucion').reset();

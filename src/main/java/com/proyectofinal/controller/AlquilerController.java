@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List; // Importación necesaria para el método GET
+
 @RestController
 @RequestMapping("/api/alquileres")
 public class AlquilerController {
@@ -14,6 +16,11 @@ public class AlquilerController {
 
     public AlquilerController(AlquilerService alquilerService) {
         this.alquilerService = alquilerService;
+    }
+
+    @GetMapping
+    public List<Alquileres> obtenerTodosLosAlquileres() {
+        return alquilerService.obtenerTodos();
     }
 
     @PostMapping
