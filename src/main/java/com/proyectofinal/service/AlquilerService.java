@@ -1,16 +1,26 @@
 package com.proyectofinal.service;
 
-import com.proyectofinal.DAO.*;
-import com.proyectofinal.modelo.*;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.proyectofinal.DAO.AccesoriosDAO;
+import com.proyectofinal.DAO.AlquilerDAO;
+import com.proyectofinal.DAO.ClientesDAO;
+import com.proyectofinal.DAO.EquiposDAO;
+import com.proyectofinal.DAO.PagoDAO;
+import com.proyectofinal.modelo.Accesorios;
+import com.proyectofinal.modelo.AlquilerAccesorios;
+import com.proyectofinal.modelo.AlquilerEquipos;
+import com.proyectofinal.modelo.Alquileres;
+import com.proyectofinal.modelo.Clientes;
+import com.proyectofinal.modelo.Equipos;
 
 @Service
 public class AlquilerService {
@@ -20,13 +30,15 @@ public class AlquilerService {
     private final AccesoriosDAO accesoriosDAO;
     private final EquiposDAO equiposDAO;
     private final PagoDAO pagoDAO;
+    private final InventarioService inventarioService;
 
-    public AlquilerService(AlquilerDAO alquilerDAO, ClientesDAO clientesDAO, AccesoriosDAO accesoriosDAO, EquiposDAO equiposDAO, PagoDAO pagoDAO) {
+    public AlquilerService(AlquilerDAO alquilerDAO, ClientesDAO clientesDAO, AccesoriosDAO accesoriosDAO, EquiposDAO equiposDAO, PagoDAO pagoDAO, InventarioService inventarioService) {
         this.alquilerDAO = alquilerDAO;
         this.clientesDAO = clientesDAO;
         this.accesoriosDAO = accesoriosDAO;
         this.equiposDAO = equiposDAO;
         this.pagoDAO = pagoDAO;
+        this.inventarioService = inventarioService;
     }
 
     public List<Alquileres> obtenerTodos() {
@@ -85,8 +97,7 @@ public class AlquilerService {
                 if (esScooter) {
                     if (equipo.getBateriaPorcentaje() < 30) {
                         throw new IllegalStateException("El scooter " + equipo.getIdEquipo() +
-                                " tiene menos del 30% de batería (" + equipo.getBateriaPorcentaje() +
-                                "%). No puede ser alquilado.");
+                                " tiene menos del 30% de batería (" + equipo.getBateriaPorcentaje() + "%). No puede ser alquilado.");
                     }
                     depositoTotal = depositoTotal.add(new BigDecimal("200.00"));
                 } else {
@@ -178,10 +189,8 @@ public class AlquilerService {
                 }
 
                 aeBD.setEstadoDevolucion(estadoDev);
-
                 if ("DAÑADO".equalsIgnoreCase(estadoDev)) {
                     sumaDanos = sumaDanos.add(equipoBD.getPrecioReposicion());
-                    equiposDAO.actualizarEstado(equipoBD.getIdEquipo(), "EN MANTENIMIENTO");
                 } else {
                     equiposDAO.actualizarEstado(equipoBD.getIdEquipo(), "DISPONIBLE");
                 }
@@ -269,6 +278,13 @@ public class AlquilerService {
         alquilerDAO.modificar(alquilerBD);
 
         pagoDAO.registrarPago(idAlquiler, fechaDevolucion, metodoPago, totalCobrarCaja, referencia);
+
+        if (alquilerBD.getAlquilerEquiposLista() != null) {
+            for (AlquilerEquipos ae : alquilerBD.getAlquilerEquiposLista()) {
+                boolean danado = "DAÑADO".equalsIgnoreCase(ae.getEstadoDevolucion());
+                inventarioService.aplicarMantenimientoAutomatico(ae.getIdEquipo(), danado);
+            }
+        }
 
         // Dsglose para mostrar recibo en pantalla
         alquilerBD.setMetodoPago(metodoPago);

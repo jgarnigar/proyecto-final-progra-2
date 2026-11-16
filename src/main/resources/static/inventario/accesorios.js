@@ -123,6 +123,7 @@ function cargarDatosEquipos() {
             llenarSelectorHistorial(equipos, accesorios);
             llenarSelectorMantenimiento(equipos, accesorios);
             mostrarEquiposEnMantenimiento(equipos);
+            cargarAccesoriosEnMantenimiento();
         })
         .catch(error => {
             console.error("Error cargando datos:", error);
@@ -185,6 +186,90 @@ function llenarSelectorMantenimiento(equipos, accesorios) {
             grupoAccesorios.appendChild(opcion);
         });
     selector.appendChild(grupoAccesorios);
+    alternarCamposMantenimiento();
+}
+
+function alternarCamposMantenimiento() {
+    const esAccesorio = document.getElementById("equipoMantenimiento").value.startsWith("A-");
+
+    document.getElementById("grupoCantidadMant").classList.toggle("d-none", !esAccesorio);
+    document.getElementById("grupoMotivoMant").classList.toggle("d-none", esAccesorio);
+    document.getElementById("grupoCostoMant").classList.toggle("d-none", esAccesorio);
+
+    document.getElementById("motivoMantenimiento").required = !esAccesorio;
+    document.getElementById("costoMantenimiento").required = !esAccesorio;
+}
+
+function cargarAccesoriosEnMantenimiento() {
+    const tbody = document.getElementById("cuerpoTablaAccesoriosMantenimiento");
+
+    fetch("/api/mantenimientos/accesorios/en-mantenimiento")
+        .then(response => {
+            if (!response.ok) throw new Error("No se pudieron consultar los accesorios en mantenimiento.");
+            return response.json();
+        })
+        .then(lista => {
+            tbody.innerHTML = "";
+
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">No hay accesorios en mantenimiento.</td></tr>`;
+                return;
+            }
+
+            lista.forEach(item => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>#${item.idAccesorio}</td>
+                    <td>${item.nombre}</td>
+                    <td><span class="badge bg-warning text-dark">${item.enMantenimiento}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="recibirAccesorio(${item.idAccesorio}, ${item.enMantenimiento})">
+                            <i class="bi bi-check-circle"></i> Recibir
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(error => {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">${error.message}</td></tr>`;
+        });
+}
+
+function recibirAccesorio(idAccesorio, enMantenimiento) {
+    const respuesta = prompt(`¿Cuántas unidades regresan del mantenimiento? (máximo ${enMantenimiento})`, enMantenimiento);
+    if (respuesta === null) return;
+
+    const cantidad = Number(respuesta);
+    if (!Number.isInteger(cantidad) || cantidad <= 0) {
+        mostrarAlertaMantenimiento("La cantidad debe ser un número entero mayor a cero.", "danger");
+        return;
+    }
+
+    fetch("/api/mantenimientos/accesorio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            idAccesorio: idAccesorio,
+            cantidad: cantidad,
+            tipoMovimiento: "ENTRADA_POR_MANTENIMIENTO"
+        })
+    })
+        .then(async response => {
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(text || "No se pudo registrar la recepción.");
+            }
+            return response.json();
+        })
+        .then(() => {
+            mostrarAlertaMantenimiento("Accesorios recibidos. El stock fue actualizado.", "success");
+            cargarDatosEquipos();
+            cargarAccesorios();
+        })
+        .catch(error => {
+            mostrarAlertaMantenimiento(error.message, "danger");
+        });
 }
 
 function mostrarEquiposEnMantenimiento(equipos) {
@@ -244,7 +329,7 @@ function guardarMantenimiento(evento) {
         const historialAccesorio = {
             idAccesorio: idReal,
             fecha: document.getElementById("fechaMantenimiento").value || null,
-            cantidad: 1,
+            cantidad: Number(document.getElementById("cantidadMantenimiento").value),
             tipoMovimiento: "SALIDA_POR_MANTENIMIENTO"
         };
         enviarMantenimientoBackend("/api/mantenimientos/accesorio", historialAccesorio);
@@ -267,6 +352,7 @@ function enviarMantenimientoBackend(url, payload) {
         .then(() => {
             modalMantenimiento.hide();
             document.getElementById("formMantenimiento").reset();
+            alternarCamposMantenimiento();
             cargarDatosEquipos();
             cargarAccesorios();
             mostrarAlertaMantenimiento("Registro guardado correctamente.", "success");

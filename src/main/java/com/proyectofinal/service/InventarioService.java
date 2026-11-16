@@ -3,16 +3,17 @@ package com.proyectofinal.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.proyectofinal.DAO.AccesoriosDAO;
 import com.proyectofinal.DAO.AccesorioHistorialDAO;
+import com.proyectofinal.DAO.AccesoriosDAO;
 import com.proyectofinal.DAO.EquiposDAO;
 import com.proyectofinal.DAO.MantenimientoDAO;
-import com.proyectofinal.modelo.Accesorios;
 import com.proyectofinal.modelo.Accesoriohistorial;
+import com.proyectofinal.modelo.Accesorios;
 import com.proyectofinal.modelo.Equipos;
 import com.proyectofinal.modelo.Mantenimientos;
 
@@ -115,6 +116,13 @@ public class InventarioService {
 
         boolean esEntrada = historial.getTipoMovimiento().toUpperCase().startsWith("ENTRADA");
 
+        if ("ENTRADA_POR_MANTENIMIENTO".equalsIgnoreCase(historial.getTipoMovimiento())) {
+            int enMantenimiento = accesorioHistorialDAO.unidadesEnMantenimiento(historial.getIdAccesorio());
+            if (historial.getCantidad() > enMantenimiento) {
+                throw new RuntimeException("Solo hay " + enMantenimiento + " unidad(es) de " + accesorio.getNombre() + " en mantenimiento.");
+            }
+        }
+
         if (esEntrada) {
             accesorio.setExistenciaActual(accesorio.getExistenciaActual() + historial.getCantidad());
         } else {
@@ -146,5 +154,39 @@ public class InventarioService {
         }
 
         return accesorioHistorialDAO.obtenerHistorialPorAccesorio(idAccesorio);
+    }
+
+    public List<Map<String, Object>> obtenerAccesoriosEnMantenimiento() {
+        return accesorioHistorialDAO.listarEnMantenimiento();
+    }
+
+    public void aplicarMantenimientoAutomatico(int idEquipo, boolean danado) {
+        Equipos equipo = equiposDAO.consultar(idEquipo);
+        if (equipo == null || "EN MANTENIMIENTO".equals(equipo.getEstado())) {
+            return;
+        }
+
+        String motivo;
+        if (danado) {
+            motivo = "Equipo devuelto con daños";
+        } else if (mantenimientoDAO.contarAlquileresDesdeUltimoMantenimiento(idEquipo) >= 10) {
+            motivo = "Mantenimiento preventivo: 10 alquileres finalizados";
+        } else {
+            return;
+        }
+
+        Mantenimientos mantenimiento = new Mantenimientos();
+        mantenimiento.setIdEquipo(idEquipo);
+        mantenimiento.setFecha(LocalDateTime.now());
+        mantenimiento.setMotivo(motivo);
+        mantenimiento.setCosto(BigDecimal.ZERO);
+
+        if (!mantenimientoDAO.registrarMantenimiento(mantenimiento)) {
+            throw new RuntimeException("No se pudo registrar el mantenimiento automático.");
+        }
+
+        if (!equiposDAO.actualizarEstado(idEquipo, "EN MANTENIMIENTO")) {
+            throw new RuntimeException("No se pudo actualizar el estado del equipo.");
+        }
     }
 }

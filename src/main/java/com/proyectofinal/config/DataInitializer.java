@@ -1,17 +1,18 @@
 package com.proyectofinal.config;
 
+import java.math.BigDecimal;
+import java.util.List;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+
 import com.proyectofinal.DAO.AccesoriosDAO;
 import com.proyectofinal.DAO.ClientesDAO;
 import com.proyectofinal.DAO.EquiposDAO;
 import com.proyectofinal.modelo.Accesorios;
 import com.proyectofinal.modelo.Clientes;
 import com.proyectofinal.modelo.Equipos;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
-import java.math.BigDecimal;
-import java.util.List;
 
     @Component
     @ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true", matchIfMissing = true)

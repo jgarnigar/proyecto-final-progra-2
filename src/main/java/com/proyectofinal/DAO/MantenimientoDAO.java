@@ -1,13 +1,19 @@
 package com.proyectofinal.DAO;
 
-import com.proyectofinal.modelo.Mantenimientos;
-import org.springframework.stereotype.Repository;
-
-import javax.sql.DataSource;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.sql.DataSource;
+
+import org.springframework.stereotype.Repository;
+
+import com.proyectofinal.modelo.Mantenimientos;
 
 @Repository
 public class MantenimientoDAO {
@@ -26,7 +32,6 @@ public class MantenimientoDAO {
              PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setInt(1, mantenimiento.getIdEquipo());
-            // Usando setObject para guardar el LocalDateTime
             ps.setObject(2, mantenimiento.getFecha());
             ps.setString(3, mantenimiento.getMotivo());
             ps.setBigDecimal(4, mantenimiento.getCosto());
@@ -64,10 +69,7 @@ public class MantenimientoDAO {
                     Mantenimientos m = new Mantenimientos();
                     m.setIdMantenimiento(rs.getInt("id_mantenimiento"));
                     m.setIdEquipo(rs.getInt("id_equipo"));
-
-                    // Usando getObject para recuperar el LocalDateTime
                     m.setFecha(rs.getObject("fecha", LocalDateTime.class));
-
                     m.setMotivo(rs.getString("motivo"));
                     m.setCosto(rs.getBigDecimal("costo"));
 
@@ -79,5 +81,28 @@ public class MantenimientoDAO {
         }
 
         return lista;
+    }
+    public int contarAlquileresDesdeUltimoMantenimiento(int idEquipo) {
+        String sql = "SELECT COUNT(*) FROM alquiler_equipos ae "
+                + "JOIN alquileres a ON a.id_alquiler = ae.id_alquiler "
+                + "WHERE ae.id_equipo = ? AND a.estado = 'FINALIZADO' "
+                + "AND a.fecha_real > COALESCE((SELECT MAX(m.fecha) FROM mantenimientos m WHERE m.id_equipo = ?), '1000-01-01 00:00:00')";
+
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, idEquipo);
+            ps.setInt(2, idEquipo);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0;
     }
 }

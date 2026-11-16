@@ -124,6 +124,33 @@
                         </div>
                     </div>
 
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="mb-0">
+                                <i class="bi bi-tools me-2"></i> Accesorios en Mantenimiento
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Accesorio</th>
+                                        <th>Unidades en mantenimiento</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="cuerpoTablaAccesoriosMantenimiento">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">Cargando accesorios...</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Historial -->
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white py-3">
@@ -166,7 +193,7 @@
     </div>
 </div>
 
-<!-- Modal para Crear/Editar Accesorio (Tu versión) -->
+<!-- Modal para Crear/Editar Accesorio -->
 <div class="modal fade" id="modalAccesorio" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -209,7 +236,7 @@
     </div>
 </div>
 
-<!-- Modal de mantenimiento (Versión de tu compañera) -->
+<!-- Modal de mantenimiento  -->
 <div class="modal fade" id="modalMantenimiento" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -222,8 +249,8 @@
                     <div id="alertaErrorMantenimiento" class="alert alert-danger d-none"></div>
 
                     <div class="mb-3">
-                        <label for="equipoMantenimiento" class="form-label fw-bold">Equipo disponible</label>
-                        <select id="equipoMantenimiento" class="form-select" required>
+                        <label for="equipoMantenimiento" class="form-label fw-bold">Equipo o accesorio</label>
+                        <select id="equipoMantenimiento" class="form-select" required onchange="alternarCamposMantenimiento()">
                             <option value="">Seleccione un equipo...</option>
                         </select>
                     </div>
@@ -233,12 +260,17 @@
                         <input type="datetime-local" id="fechaMantenimiento" class="form-control" required>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-3 d-none" id="grupoCantidadMant">
+                        <label for="cantidadMantenimiento" class="form-label fw-bold">Cantidad de unidades</label>
+                        <input type="number" id="cantidadMantenimiento" class="form-control" min="1" value="1">
+                    </div>
+
+                    <div class="mb-3" id="grupoMotivoMant">
                         <label for="motivoMantenimiento" class="form-label fw-bold">Motivo</label>
                         <textarea id="motivoMantenimiento" class="form-control" maxlength="100" rows="3" placeholder="Describa el mantenimiento realizado o pendiente..." required></textarea>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-3" id="grupoCostoMant">
                         <label for="costoMantenimiento" class="form-label fw-bold">Costo (Q)</label>
                         <input type="number" id="costoMantenimiento" class="form-control" min="0" step="0.01" required>
                     </div>
