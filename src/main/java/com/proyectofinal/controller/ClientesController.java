@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 import com.proyectofinal.DAO.ClientesDAO;
 import com.proyectofinal.modelo.Clientes;
 
@@ -78,6 +81,31 @@ public class ClientesController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
+    }
+
+    @PutMapping("/{id}/abonar")
+    public ResponseEntity<?> abonarSaldo(@PathVariable("id") int id, @RequestBody Map<String, BigDecimal> body) {
+        Clientes cliente = clientesDAO.consultar(id);
+        if (cliente == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cliente no encontrado.");
+        }
+
+        BigDecimal monto = body.get("monto");
+        BigDecimal saldoActual = cliente.getSaldoPendiente() != null ? cliente.getSaldoPendiente() : BigDecimal.ZERO;
+
+        if (monto == null || monto.compareTo(BigDecimal.ZERO) <= 0) {
+            return ResponseEntity.badRequest().body("El monto del abono debe ser mayor a cero.");
+        }
+        if (monto.compareTo(saldoActual) > 0) {
+            return ResponseEntity.badRequest().body("El monto no puede ser mayor al saldo pendiente (Q " + saldoActual + ").");
+        }
+
+        cliente.setSaldoPendiente(saldoActual.subtract(monto));
+        if (!clientesDAO.modificar(cliente)) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No se pudo aplicar el abono.");
+        }
+
+        return ResponseEntity.ok(cliente);
     }
 
     @DeleteMapping("/{id}")
