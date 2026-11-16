@@ -31,6 +31,7 @@
                     <h2 class="h3 fw-bold mb-0">Estudio de Reportes y Analítica PDF</h2>
                     <small class="text-muted">Motor de consultas en tiempo real y exportación documental</small>
                 </div>
+                <!-- Único botón de descarga oficial conservado en la barra superior -->
                 <div class="d-flex gap-2 mt-2 mt-md-0">
                     <button id="btnCargarDatos" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-clockwise me-1"></i> Sincronizar DB
@@ -101,7 +102,7 @@
                                     <input type="text" id="inputMarcaAguaSub" class="form-control" value="UNIVERSIDAD MARIANO GÁLVEZ">
                                 </div>
                             </div>
-                            <div class="bg-light p-3 rounded border mb-3">
+                            <div class="bg-light p-3 rounded border">
                                 <span class="d-block fw-bold small mb-2 text-dark">Bloques visibles en el PDF:</span>
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="chkMostrarKpis" checked>
@@ -116,9 +117,6 @@
                                     <label class="form-check-label small" for="chkMostrarMarcaAgua">Incluir marca de agua</label>
                                 </div>
                             </div>
-                            <button id="btnDescargarPDFSecundario" class="btn btn-primary w-100 fw-bold py-2">
-                                <i class="bi bi-printer me-1"></i> Compilar y Descargar PDF
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -126,7 +124,7 @@
                 <div class="col-xl-8">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center">
-                            <span class="small fw-bold text-secondary"><i class="bi bi-eye me-1 text-primary"></i>VISTA PREVIA EN VIVO (FORMATO CARTA)</span>
+                            <span class="small fw-bold text-secondary"><i class="bi bi-eye me-1 text-primary"></i>VISTA PREVIA EN VIVO (FORMATO CARTA VERTICAL)</span>
                             <span id="badgeSincronizacion" class="badge bg-success-subtle text-success">Sincronizado</span>
                         </div>
                         <div class="card-body bg-secondary-subtle p-3 p-md-4 overflow-auto">
