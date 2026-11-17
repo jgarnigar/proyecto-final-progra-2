@@ -59,4 +59,16 @@ public class AlquilerController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
+
+    @PutMapping("/{id}/cancelar")
+    public ResponseEntity<?> cancelarAlquiler(@PathVariable("id") int idAlquiler) {
+        try {
+            Alquileres alquilerCancelado = alquilerService.cancelarAlquiler(idAlquiler);
+            return ResponseEntity.ok(alquilerCancelado);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
 }

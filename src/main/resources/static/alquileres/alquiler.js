@@ -466,3 +466,87 @@ function mostrarAlertaGeneral(mensaje, tipo) {
     alerta.classList.remove('d-none');
     setTimeout(function () { alerta.classList.add('d-none'); }, 5000);
 }
+
+function renderizarTablaAlquileres(alquileres) {
+    var tbody = document.getElementById('cuerpoTablaAlquileres');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (alquileres.length === 0) {
+        tbody.innerHTML =
+            '<tr>' +
+            '<td colspan="7" class="text-center text-muted py-4">' +
+            'No hay alquileres registrados. Presiona "Nuevo Alquiler" para crear uno.' +
+            '</td>' +
+            '</tr>';
+        return;
+    }
+
+    alquileres.forEach(function (alq) {
+        var badgeColor = 'bg-secondary';
+        var botonAccion = '<span class="text-muted small">Completado</span>';
+
+        if (alq.estado === 'RESERVADO') {
+            badgeColor = 'bg-info text-dark';
+            botonAccion =
+                '<button type="button" class="btn btn-sm btn-success me-1" onclick="entregarAlquiler(' + alq.idAlquiler + ')">' +
+                '<i class="bi bi-box-arrow-right me-1"></i> Entregar' +
+                '</button>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger" onclick="cancelarAlquiler(' + alq.idAlquiler + ')">' +
+                '<i class="bi bi-x-circle me-1"></i> Cancelar' +
+                '</button>';
+        } else if (alq.estado === 'ACTIVO') {
+            badgeColor = 'bg-warning text-dark';
+            botonAccion =
+                '<button type="button" class="btn btn-sm btn-primary" onclick="abrirModalDevolucion(' + alq.idAlquiler + ')">' +
+                '<i class="bi bi-cash-coin me-1"></i> Recibir / Cobrar' +
+                '</button>';
+        } else if (alq.estado === 'FINALIZADO') {
+            badgeColor = 'bg-success';
+        } else if (alq.estado === 'CANCELADO') {
+            badgeColor = 'bg-danger';
+            botonAccion = '<span class="text-muted small">Cancelado</span>';
+        }
+
+        var nombreCliente = clientesMap[alq.idCliente]
+            ? '#' + alq.idCliente + ' - ' + clientesMap[alq.idCliente]
+            : 'Cliente #' + alq.idCliente;
+
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+            '<td class="fw-bold">#' + alq.idAlquiler + '</td>' +
+            '<td>' + nombreCliente + '</td>' +
+            '<td>Q ' + Number(alq.depositoCobrado || 0).toFixed(2) + '</td>' +
+            '<td>' + formatearFecha(alq.fechaEstimada) + '</td>' +
+            '<td>' + formatearFecha(alq.fechaReal) + '</td>' +
+            '<td><span class="badge ' + badgeColor + '">' + alq.estado + '</span></td>' +
+            '<td>' + botonAccion + '</td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function cancelarAlquiler(idAlquiler) {
+    if (!confirm('¿Está seguro de cancelar la reserva #' + idAlquiler + '? Esta acción no se puede deshacer.')) {
+        return;
+    }
+
+    fetch(API_URL + '/' + idAlquiler + '/cancelar', {
+        method: 'PUT'
+    })
+        .then(function (response) {
+            if (!response.ok) {
+                return response.text().then(function (errorMsg) {
+                    throw new Error(errorMsg || 'No se pudo cancelar el alquiler.');
+                });
+            }
+            return response.json();
+        })
+        .then(function () {
+            mostrarAlertaGeneral('Reserva #' + idAlquiler + ' cancelada correctamente.', 'warning');
+            cargarAlquileres();
+            cargarCatalogos();
+        })
+        .catch(function (error) {
+            mostrarAlertaGeneral(error.message, 'danger');
+        });
+}

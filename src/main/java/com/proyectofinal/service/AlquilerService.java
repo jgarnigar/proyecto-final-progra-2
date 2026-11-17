@@ -137,6 +137,25 @@ public class AlquilerService {
     }
 
     @Transactional
+    public Alquileres cancelarAlquiler(int idAlquiler) {
+        Alquileres alquiler = alquilerDAO.consultar(idAlquiler);
+        if (alquiler == null) {
+            throw new IllegalArgumentException("El alquiler #" + idAlquiler + " no existe.");
+        }
+
+        if (!"RESERVADO".equalsIgnoreCase(alquiler.getEstado())) {
+            throw new IllegalStateException("Solo se pueden cancelar alquileres en estado RESERVADO. Estado actual: " + alquiler.getEstado());
+        }
+
+        alquiler.setEstado("CANCELADO");
+        if (!alquilerDAO.modificar(alquiler)) {
+            throw new RuntimeException("No se pudo cancelar el alquiler en la base de datos.");
+        }
+
+        return alquiler;
+    }
+
+    @Transactional
     public Alquileres devolverAlquiler(int idAlquiler, Alquileres datosDevolucion) {
         Alquileres alquilerBD = alquilerDAO.consultar(idAlquiler);
         if (alquilerBD == null) {
@@ -196,6 +215,8 @@ public class AlquilerService {
                 }
             }
         }
+
+
 
         // caculo de accesorios y si son extraviados
         if (alquilerBD.getAlquilerAccesoriosLista() != null) {
@@ -285,6 +306,8 @@ public class AlquilerService {
                 inventarioService.aplicarMantenimientoAutomatico(ae.getIdEquipo(), danado);
             }
         }
+
+
 
         // Dsglose para mostrar recibo en pantalla
         alquilerBD.setMetodoPago(metodoPago);
